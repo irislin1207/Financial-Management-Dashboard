@@ -1,4 +1,5 @@
-﻿<meta charset="utf-8">
+﻿<html lang="zh-Hant-TW">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>餘裕</title>
 <link rel="manifest" href="manifest.json">
@@ -354,14 +355,20 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   .sheet-bd{overflow-y:auto}
   #toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
 
-  /* 觸控目標放大 */
-  .btn{padding:9px 14px; font-size:.86rem}
-  .btn.sm{padding:7px 11px; font-size:.79rem}
-  .btn.x{padding:8px 10px; font-size:1.05rem}
-  .btn.ord{padding:6px 10px}
+  /* 觸控目標放大：WCAG 建議可點擊區域至少 44×44 */
+  .btn{padding:9px 14px; font-size:.86rem; min-height:44px}
+  .btn.sm{padding:7px 11px; font-size:.79rem; min-height:44px}
+  .btn.x{padding:8px 10px; font-size:1.05rem; min-height:44px; min-width:44px}
+  .btn.ord{padding:6px 10px; min-height:44px; min-width:44px}
+  .btn.nav{min-height:44px; min-width:44px}   /* 上下個月箭頭，每月都要點 */
   .chip{padding:9px 14px; font-size:.88rem}
   .sw{padding:4px 0}
   .tx .del,.tx .stl{padding:4px 6px; font-size:.9rem}
+}
+/* 寬螢幕：容器放寬，不要左右各空一大塊。
+   文字段落仍靠 .wrap 內的卡片自行斷行，不會拉成難讀的長行。 */
+@media (min-width:1200px){
+  .wrap{max-width:1100px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
 </style>
@@ -383,7 +390,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <span class="lbl" id="mLabel">—</span>
     <button class="btn nav" id="mNext" aria-label="下個月">→</button>
     <button class="btn sm" id="mToday" hidden>回到本月</button>
-    <input type="month" id="mJump">
+    <input type="month" id="mJump" aria-label="跳到指定月份">
     <span class="sub" id="mSub"></span>
   </div>
 </header>
@@ -438,7 +445,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <div class="hd"><h2>記一筆</h2><span class="fl" id="entryFl"></span></div>
     <div class="bd entry">
       <div class="dirbar" id="dirBar"></div>
-      <div class="amtbox"><span id="curSym">NT$</span><input class="n" id="e-amt" inputmode="decimal" placeholder="0"></div>
+      <div class="amtbox"><span id="curSym" aria-hidden="true">＄</span><input class="n" id="e-amt" inputmode="decimal" placeholder="0" aria-label="金額"></div>
       <div class="fld" id="catWrap"><span>類別</span><div class="chips" id="e-cats"></div></div>
       <div class="grid2">
         <label class="fld" id="acctWrap"><span id="acctLbl">帳戶</span><select id="e-acct"></select></label>
@@ -451,7 +458,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
         <label class="fld"><span id="noteLbl">備註 / 商家</span><input type="text" id="e-note" list="noteList" placeholder="選填" autocomplete="off"><datalist id="noteList"></datalist></label>
       </div>
       <button class="btn pri" id="e-save" style="padding:10px">記錄</button>
-      <p class="note" id="e-hint"></p>
+      <p class="note" id="e-hint" aria-live="polite"></p>
     </div>
   </div>
   <div class="card"><div class="hd"><h2>當月明細</h2><span class="fl" id="txFl">—</span></div>
@@ -517,7 +524,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
         <label class="fld"><span>繳款日</span><select id="ad-due"></select></label>
       </div>
       <label class="fld" id="ad-payWrap" hidden><span>繳款帳戶</span><select id="ad-pay"></select></label>
-      <p class="note" id="ad-hint"></p>
+      <p class="note" id="ad-hint" aria-live="polite"></p>
     </div>
     <div class="sheet-ft">
       <button class="btn danger" type="button" id="ad-del" hidden>刪除</button>
@@ -670,16 +677,16 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
           <button class="btn" id="expJson">完整備份 · JSON</button>
           <button class="btn" id="expCsv">交易明細 · CSV</button>
         </div>
-        <p class="note" id="expNote">JSON 可以再匯入回來，CSV 適合丟進 Excel 看。</p>
+        <p class="note" id="expNote" aria-live="polite">JSON 可以再匯入回來，CSV 適合丟進 Excel 看。</p>
 
         <h3 style="margin-top:6px">匯入</h3>
-        <textarea id="impBox" placeholder="把備份 JSON 貼進來，再按下方按鈕"></textarea>
+        <textarea id="impBox" placeholder="把備份 JSON 貼進來，再按下方按鈕" aria-label="備份 JSON 內容"></textarea>
         <div class="btnrow">
           <button class="btn" id="impGo">從 JSON 覆蓋</button>
           <button class="btn" id="loadDemo">載入示範資料</button>
           <button class="btn danger" id="wipe">全部清空</button>
         </div>
-        <p class="note" id="impNote">匯入與清空都會覆蓋現有資料，需要按兩次確認。</p>
+        <p class="note" id="impNote" aria-live="polite">匯入與清空都會覆蓋現有資料，需要按兩次確認。</p>
       </div>
     </div>
   </div>
@@ -1288,7 +1295,7 @@ function buildEntry(){
   const c=catOf(u.cat);
   $("#goalWrap").hidden = !(d==="out" && S.goals.length>0);
   const a=acctOf(u.acct);
-  $("#curSym").textContent=(a&&a.currency&&a.currency!=="TWD")?a.currency:"NT$";
+  $("#curSym").textContent=(a&&a.currency&&a.currency!=="TWD")?a.currency:"＄";
   if(!$("#e-date").value) $("#e-date").value=defaultDate();
   const seen=[...new Set(S.txns.map(t=>t.note).filter(Boolean))].reverse().slice(0,60);
   $("#noteList").innerHTML=seen.map(x=>'<option value="'+esc(x)+'"></option>').join("");
@@ -2036,6 +2043,39 @@ function typing(){
 document.addEventListener("focusout",()=>{
   setTimeout(()=>{ if(pendingRemote && !typing()){ const s=pendingRemote; pendingRemote=null; applyRemote(s); } },80);
 });
+
+/* ---------- 即時驗證 ----------
+   原本只在按下確認時才驗，錯誤也只是視覺呈現。這裡補兩件事：
+   1. 離開欄位（blur）時就驗 —— 但只在「已經填了東西卻不合法」時才講話，
+      欄位還空著沒填不嘮叨，避免 tab 經過就被罵。
+   2. 使用者一改成合法值就立刻收回錯誤訊息。
+   e-hint 平常放的是操作說明，所以收回錯誤要呼叫 entryHint() 還原，不能清空。 */
+(function inlineValidation(){
+  const errShown = (sel,kw) => { const el=$(sel); return !!el && kw.test(el.textContent); };
+
+  document.addEventListener("blur", e=>{
+    const t=e.target; if(!(t instanceof HTMLElement)) return;
+    if(t.id==="e-amt"){
+      const v=t.value.trim();
+      if(v!=="" && !(n(v)>0)) $("#e-hint").textContent="金額要大於 0。";
+    }else if(t.id==="ad-name"){
+      const dlg=$("#acctDlg");
+      if(dlg && dlg.open && t.dataset.touched==="1" && t.value.trim()==="")
+        $("#ad-hint").textContent="請先輸入帳戶名稱。";
+    }
+  }, true);
+
+  document.addEventListener("input", e=>{
+    const t=e.target; if(!(t instanceof HTMLElement)) return;
+    if(t.id==="e-amt"){
+      t.dataset.touched="1";
+      if(n(t.value)>0 && errShown("#e-hint",/金額/)) entryHint();
+    }else if(t.id==="ad-name"){
+      t.dataset.touched="1";
+      if(t.value.trim()!=="" && errShown("#ad-hint",/帳戶名稱/)) $("#ad-hint").textContent="";
+    }
+  }, true);
+})();
 
 /* ---------- Firebase 儲存層 ----------
    由 firebase.js（module）建立 window.__fb 後通知；這裡只認一個介面：
