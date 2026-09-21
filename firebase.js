@@ -38,9 +38,11 @@ await setPersistence(auth, browserLocalPersistence).catch(() => {});
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
 
-// 手機上 popup 常被擋，改用 redirect
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-getRedirectResult(auth).catch(() => {});
+/* redirect 回跳的結果。失敗要記下來讓畫面講出口，不要靜默吞掉——
+   否則使用者只會看到「選完 Google 帳號又回到登入畫面」，不知道發生什麼事。 */
+getRedirectResult(auth).catch(err => {
+  window.__fbAuthError = (err && err.code) || String(err);
+});
 
 const ref = uid => doc(db, "users", uid);
 
@@ -48,8 +50,22 @@ window.__fb = {
   onUser(cb) {
     return onAuthStateChanged(auth, cb);
   },
-  signIn() {
-    return isMobile ? signInWithRedirect(auth, provider) : signInWithPopup(auth, provider);
+  async signIn() {
+    window.__fbAuthError = null;
+    /* 一律先用 popup，手機也是。signInWithRedirect 在 iOS Safari 和會切割
+       第三方儲存的瀏覽器上，回跳時會弄丟待處理狀態（它要靠指向 authDomain
+       的跨網域 iframe 取回結果），表現就是回到登入畫面且毫無錯誤。自架在
+       GitHub Pages 上無法自行託管 auth handler，所以 popup 才是可靠的那條路。 */
+    try {
+      return await signInWithPopup(auth, provider);
+    } catch (err) {
+      const code = (err && err.code) || "";
+      if (code === "auth/popup-blocked" ||
+          code === "auth/operation-not-supported-in-this-environment") {
+        return signInWithRedirect(auth, provider);
+      }
+      throw err;
+    }
   },
   signOut() {
     return signOut(auth);

@@ -1,4 +1,6 @@
-﻿<title>餘裕</title>
+﻿<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>餘裕</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -63,13 +65,23 @@ header{padding-block:22px 12px; display:flex; flex-direction:column; gap:10px}
 .mnav .sub{font-family:var(--font); font-size:.7rem; color:var(--ink-3)}
 .mnav input[type=month]{width:auto; padding:4px 8px; font-size:.8rem}
 
-nav{display:flex; gap:2px; border-bottom:1px solid var(--rule-strong); margin-bottom:20px; overflow-x:auto}
+/* 桌面：五個分頁平均撐滿容器寬度，不要擠在左邊一小撮 */
+nav{display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
+  border-bottom:1px solid var(--rule-strong); margin-bottom:20px}
 nav button{appearance:none; background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px;
-  padding:9px 14px; font:inherit; font-size:.89rem; font-weight:500; color:var(--ink-3); cursor:pointer; white-space:nowrap}
-nav button[aria-selected="true"]{color:var(--accent-ink); border-bottom-color:var(--accent)}
-nav button:hover{color:var(--ink)}
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:13px 10px; min-height:48px; border-radius:8px 8px 0 0;
+  font:inherit; font-size:1rem; font-weight:500; color:var(--ink-3); cursor:pointer; white-space:nowrap;
+  transition:background .15s ease, color .15s ease}
+nav button[aria-selected="true"]{color:var(--accent-ink); border-bottom-color:var(--accent); font-weight:600}
+nav button:hover{color:var(--ink); background:var(--accent-soft)}
+nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 
 .panel{display:flex; flex-direction:column; gap:20px}
+/* [hidden] 是瀏覽器預設樣式，會被任何 class 的 display 蓋過
+   （.fld{display:flex}、.grid2{display:grid} 都會）。
+   沒有這條，JS 設了 el.hidden=true 的欄位仍然看得見。 */
+[hidden]{display:none !important}
 .panel[hidden]{display:none}
 
 .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px}
@@ -297,7 +309,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{
   box-shadow:0 4px 16px rgba(0,0,0,.14)}
 #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 
-nav button svg{display:none}
+nav button svg{display:block; width:19px; height:19px; flex:none}
 
 @media (max-width:540px){
   .row{grid-template-columns:1fr 112px}
@@ -762,8 +774,11 @@ let S, dbRef=null, dlRef=null, saveTimer=null, booted=false, armed={};
 const $ = s => document.querySelector(s);
 const uid = () => "x"+Math.random().toString(36).slice(2,9);
 const n = v => { const x=parseFloat(String(v).replace(/[^\d.-]/g,"")); return isFinite(x)?x:0; };
-const fmt = v => Math.round(v).toLocaleString("en-US");
-const money = (v,c) => (v<0?"−":"")+(c&&c!=="TWD"?c+" ":"NT$")+fmt(Math.abs(v));
+const num = v => Math.round(v).toLocaleString("en-US");          // 純數字，含千分號
+/* 呼叫端多半自己加正負號後傳正值進來（如 "−"+fmt(-v)），
+   所以負號要貼在 ＄ 左邊，兩種寫法都得到「−＄1,234」。 */
+const fmt = v => (v<0?"−＄":"＄")+num(Math.abs(v));
+const money = (v,c) => (v<0?"−":"")+(c&&c!=="TWD"?c+" ":"＄")+num(Math.abs(v));
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const catOf  = id => S.cats.find(c=>c.id===id);
 const acctOf = id => S.accounts.find(a=>a.id===id);
@@ -2040,7 +2055,9 @@ function bootStorage(fb){
     window.__user=user;
     if(unsub){ unsub(); unsub=null; }
     if(!user){
-      hideGate(); showGate("");
+      hideGate(); showGate(window.__fbAuthError
+        ? "上次登入沒有完成（"+window.__fbAuthError+"）。請再按一次登入。"
+        : "");
       booted=false; dbRef=null; lastSeen=""; firstLoad=true;
       setSave("未登入",false);
       return;
