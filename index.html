@@ -22,6 +22,13 @@
   --good:#5E7042; --crit:#9B4A34; --crit-soft:#F7DDD4;
   --c1:#2F6B93; --c2:#8A6114; --c3:#5E7042; --c4:#9B4A34;
   --c5:#4E8AA8; --c6:#A88449; --c7:#8C9268; --c8:#8A7266;
+  /* 單行輸入欄的統一高度，手機斷點會拉到 44px（觸控尺寸） */
+  --field-h:42px;
+  /* 帳戶類別色帶：沿用既有五色的家族，不另外引進新色相 */
+  --k-bank-bg:#D8EBF9; --k-bank-ink:#24536F;
+  --k-cash-bg:#E7EDD6; --k-cash-ink:#4C5C2E;
+  --k-sec-bg:#FCE6B7;  --k-sec-ink:#7A5511;
+  --k-card-bg:#F7DDD4; --k-card-ink:#8C4A3F;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   /* 深色：MOTHER EARTH 當底，其餘四色浮上來當字 */
@@ -33,6 +40,10 @@
   --good:#A8BF7E; --crit:#E29079; --crit-soft:#47251C;
   --c1:#9CCBE8; --c2:#F0CE84; --c3:#A8BF7E; --c4:#E29079;
   --c5:#6FA7C6; --c6:#C9A664; --c7:#879466; --c8:#B49C8C;
+  --k-bank-bg:#1E3A4A; --k-bank-ink:#BBDCF2;
+  --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
+  --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
+  --k-card-bg:#47251C; --k-card-ink:#E29079;
 }}
 :root[data-theme="dark"]{
   --paper:#2A1A14; --surface:#372319; --surface-2:#432D22; --field:#40291F;
@@ -43,6 +54,10 @@
   --good:#A8BF7E; --crit:#E29079; --crit-soft:#47251C;
   --c1:#9CCBE8; --c2:#F0CE84; --c3:#A8BF7E; --c4:#E29079;
   --c5:#6FA7C6; --c6:#C9A664; --c7:#879466; --c8:#B49C8C;
+  --k-bank-bg:#1E3A4A; --k-bank-ink:#BBDCF2;
+  --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
+  --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
+  --k-card-bg:#47251C; --k-card-ink:#E29079;
 }
 
 *{box-sizing:border-box}
@@ -102,6 +117,17 @@ nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 .card>.bd.sep{border-top:1px solid var(--rule); padding-top:13px; margin-top:2px}
 .sub-hd{padding:11px 15px 6px; display:flex; justify-content:space-between; align-items:baseline; gap:10px}
 .sub-hd+.bd.tight{padding-top:0}
+/* 帳戶頁：四種類別各給一條底色帶，捲動時一眼分得出現在看的是哪一類。
+   顏色走 CSS 變數，深色模式由 :root 那三處一起定義——直接寫
+   [data-theme="dark"] 會漏掉「跟隨系統＋系統是深色」那種情況，
+   因為那時 data-theme 屬性是被移除的。 */
+.sub-hd.k{padding:9px 15px; border-left:4px solid currentColor; align-items:center}
+.sub-hd.k h3{color:inherit; font-weight:700; letter-spacing:.02em}
+.sub-hd.k .fl{color:inherit; opacity:.85}
+.sub-hd.k-bank{color:var(--k-bank-ink); background:var(--k-bank-bg)}
+.sub-hd.k-cash{color:var(--k-cash-ink); background:var(--k-cash-bg)}
+.sub-hd.k-sec {color:var(--k-sec-ink);  background:var(--k-sec-bg)}
+.sub-hd.k-card{color:var(--k-card-ink); background:var(--k-card-bg)}
 
 .step{display:grid; grid-template-columns:auto 1fr auto; gap:11px; padding:10px 0; border-bottom:1px solid var(--rule); align-items:center}
 .step:last-child{border-bottom:0}
@@ -116,6 +142,23 @@ nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 input,select,textarea{font:inherit; font-size:.9rem; padding:8px 11px; border:1px solid var(--rule-strong); border-radius:7px;
   background:var(--field); color:var(--ink); width:100%; min-width:0;
   transition:border-color .12s ease, box-shadow .12s ease}
+/* date／month 有瀏覽器內建外觀：內部 shadow DOM 自帶 padding 與行高，
+   算出來會比旁邊的文字欄高 2px，同一列並排就對不齊——看起來就是「跑掉」。
+   這裡把內部盒子歸零，再用 --field-h 把所有單行欄位拉到同一高度。 */
+/* 用 height 而不是 min-height：min-height 只設下限，文字欄在手機的 16px 字級下
+   會自己長到 47px，日期欄卻停在下限，兩者又對不齊。固定高度才能真的釘死。 */
+input:not([type=checkbox]),select{height:var(--field-h)}
+input[type=date],input[type=month]{
+  -webkit-appearance:none; appearance:none;
+  width:100%; min-width:0; box-sizing:border-box; text-align:left; line-height:normal}
+input[type=date]::-webkit-datetime-edit,
+input[type=month]::-webkit-datetime-edit{padding:0; line-height:normal}
+input[type=date]::-webkit-datetime-edit-fields-wrapper,
+input[type=month]::-webkit-datetime-edit-fields-wrapper{padding:0}
+input[type=date]::-webkit-date-and-time-value,
+input[type=month]::-webkit-date-and-time-value{text-align:left; margin:0}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=month]::-webkit-calendar-picker-indicator{margin-left:auto; opacity:.65; cursor:pointer}
 textarea{font-family:var(--font); font-size:.78rem; min-height:90px; resize:vertical}
 input.n{font-family:var(--font); font-variant-numeric:tabular-nums; text-align:right}
 input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
@@ -282,7 +325,13 @@ dialog::backdrop{background:rgba(8,12,10,.5)}
 @keyframes fadeUp{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
 @keyframes riseIn{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
 @keyframes flash{ 0%{background:var(--focus-soft)} 100%{background:transparent} }
-.panel:not([hidden]){ animation:fadeIn .22s ease both }
+/* 分頁切換：淡入＋輕微上移，比單純 fadeIn 有方向感，
+   切換時不會覺得畫面只是「閃一下」。減少動態時整段會被全域規則關掉。 */
+@keyframes panelIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+.panel:not([hidden]){ animation:panelIn .26s cubic-bezier(.22,.7,.3,1) both; will-change:opacity,transform }
+/* 底部分頁按鈕的選取狀態也跟著過渡，點下去有回饋 */
+nav button{ transition:background .18s ease, color .18s ease, border-color .18s ease }
+nav button:active{ transform:scale(.96) }
 .slide-f,.slide-b{ animation:fadeUp .22s ease both }
 dialog[open] .sheet{ animation:riseIn .2s cubic-bezier(.22,.61,.36,1) both }
 dialog[open]::backdrop{ animation:fadeIn .18s ease both }
@@ -342,8 +391,11 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   nav button svg{display:block; width:21px; height:21px}
   nav button[aria-selected="true"]{border-bottom-color:transparent; background:var(--accent-soft)}
 
-  /* iOS 聚焦時會放大畫面，字級要 ≥16px */
-  input,select,textarea{font-size:16px; padding:9px 11px}
+  /* iOS 聚焦時會放大畫面，字級要 ≥16px；高度拉到 44px 同時滿足觸控尺寸。
+     核取方塊要排除，不然開關會被撐開。 */
+  :root{--field-h:46px}   /* ≥44px 同時滿足觸控尺寸 */
+  input:not([type=checkbox]),select{font-size:16px; padding:9px 11px}
+  textarea{font-size:16px; padding:9px 11px}
   .amtbox input{font-size:1.85rem}
   .item .fields input.n{width:92px}
   .sch .act input{width:92px; font-size:16px}
@@ -363,7 +415,12 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   .btn.nav{min-height:44px; min-width:44px}   /* 上下個月箭頭，每月都要點 */
   .chip{padding:9px 14px; font-size:.88rem}
   .sw{padding:4px 0}
-  .tx .del,.tx .stl{padding:4px 6px; font-size:.9rem}
+  /* 交易列的 ✕ 與「結清」：把可點範圍撐到 44×44，但用負邊距吸收掉，
+     版面密度維持原樣，只是手指比較好按。 */
+  .tx .del,.tx .stl{
+    font-size:.9rem; padding:0;
+    min-width:44px; min-height:44px; margin:-11px -6px -11px 0;
+    display:inline-flex; align-items:center; justify-content:center}
 }
 /* 寬螢幕：容器放寬，不要左右各空一大塊。
    文字段落仍靠 .wrap 內的卡片自行斷行，不會拉成難讀的長行。 */
@@ -446,6 +503,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <div class="bd entry">
       <div class="dirbar" id="dirBar"></div>
       <div class="amtbox"><span id="curSym" aria-hidden="true">＄</span><input class="n" id="e-amt" inputmode="decimal" placeholder="0" aria-label="金額"></div>
+      <label class="fld"><span>項目</span><input type="text" id="e-item" list="itemList" placeholder="買了什麼、付了什麼" autocomplete="off"><datalist id="itemList"></datalist></label>
       <div class="fld" id="catWrap"><span>類別</span><div class="chips" id="e-cats"></div></div>
       <div class="grid2">
         <label class="fld" id="acctWrap"><span id="acctLbl">帳戶</span><select id="e-acct"></select></label>
@@ -497,15 +555,16 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <button class="btn sm" data-addacct="cash">＋ 現金</button>
     <button class="btn sm" data-addacct="sec">＋ 證券</button>
   </span></div>
-    <div class="sub-hd"><h3>銀行</h3><span class="fl" id="sumBank">—</span></div>
+    <div class="sub-hd k k-bank"><h3>銀行</h3><span class="fl" id="sumBank">—</span></div>
     <div class="bd tight" id="accBank"></div>
-    <div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>現金</h3><span class="fl" id="sumCash">—</span></div>
+    <div class="sub-hd k k-cash"><h3>現金</h3><span class="fl" id="sumCash">—</span></div>
     <div class="bd tight" id="accCash"></div>
-    <div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>證券</h3><span class="fl" id="sumSec">—</span></div>
+    <div class="sub-hd k k-sec"><h3>證券</h3><span class="fl" id="sumSec">—</span></div>
     <div class="bd tight" id="accSec"></div>
   </div>
 
-  <div class="card"><div class="hd"><h2>信用卡</h2><span style="display:flex;gap:8px;align-items:center"><span class="fl" id="sumCard">—</span><button class="btn sm" data-addacct="card">＋ 信用卡</button></span></div>
+  <div class="card"><div class="hd" style="padding-bottom:6px"><h2>信用卡</h2><button class="btn sm" data-addacct="card">＋ 信用卡</button></div>
+    <div class="sub-hd k k-card"><h3>信用卡</h3><span class="fl" id="sumCard">—</span></div>
     <div class="bd tight" id="accCard"></div>
     <div class="bd sep"><p class="note">帳單由該期間的交易自動加總。輸入銀行帳單金額即可對帳；有差額時可一鍵補記成一筆待分類交易。</p></div></div>
 
@@ -745,7 +804,7 @@ function demo(){
              {id:"f3",name:"電信",amount:799,day:12,acct:"c2",cat:"k9"}];
   S2.annual=[{id:"a1",name:"停車費",amount:12000,start:addMonth(m,-4),end:addMonth(m,7),
               payMonth:addMonth(m,7).slice(5),day:10,acct:"h1",cat:"k10"}];
-  S2.shared=[{id:"s1",name:"Netflix",total:500,myPct:50,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
+  S2.shared=[{id:"s1",name:"Netflix",total:500,span:1,people:2,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
   S2.transfers=[{id:"tr1",name:"轉帳存款戶",amount:5000,day:20,from:"b1",to:"h1"}];
   S2.accounts=[
     {id:"b1",name:"台新活存",type:"bank",currency:"TWD",balance:86000},
@@ -808,12 +867,36 @@ function hitsBudget(t){
 /* ================= 排程 =================
    規則不另外建，直接從 fixed / annual / shared / transfers / goals 衍生。
    每個規則在某個月份最多產生一筆待確認項目；確認後寫入一筆帶 ruleId 的交易。 */
-function ruleDay(x){ return Math.min(28, Math.max(1, n(x.day)||1)); }
-function dateIn(m,d){ return m+"-"+String(Math.min(monthDays(m),d)).padStart(2,"0"); }
+/* ---------- 分攤 ----------
+   金額用「總額 + 涵蓋月數」表示（例如三個月 1500），系統攤成每月成本，
+   跟年繳攤提同一套邏輯；排程仍然是每月一筆。
+   分法改成「共幾人分」，我的比例就是 1/人數。舊資料的 myPct 在 normalize 換算過去。 */
+const sharedSpan   = s => Math.max(1, n(s.span)||1);
+const sharedPeople = s => Math.max(1, n(s.people)||1);
+const sharedMonthly= s => n(s.total)/sharedSpan(s);            // 每月總額
+const sharedMine   = s => sharedMonthly(s)/sharedPeople(s);    // 每月我的份
+const SPAN_OPTS = [{v:1,t:"每月"},{v:2,t:"每 2 個月"},{v:3,t:"每季（3 個月）"},
+                   {v:6,t:"每半年（6 個月）"},{v:12,t:"每年（12 個月）"}];
+
+function ruleDay(x){ return Math.min(31, Math.max(1, n(x.day)||1)); }
+/* 扣款日允許 1–31。遇到沒有那天的月份（4/31、平年 2/29）就往後遞延到
+   下一個真實存在的日期——JS Date 的溢位語意剛好就是這個：
+   4/31→5/1、平年 2/29→3/1、2/31→3/3。往前退會變成「提前」而不是遞延。 */
+function dateIn(m,d){
+  const [y,mm]=m.split("-").map(Number);
+  const dt=new Date(y, mm-1, Math.min(31,Math.max(1,n(d)||1)));
+  return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")
+        +"-"+String(dt.getDate()).padStart(2,"0");
+}
+const addDays = (iso,k) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+k);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+/* 排程日可能遞延到次月，所以「這條規則這個月做過了沒」不能只看交易日期的月份，
+   要認確認當下寫進去的 ruleMonth；舊資料沒有這欄，退回用日期判斷。 */
+const ruleMonthOf = t => t.ruleMonth || mk(t.date);
 
 function scheduleFor(m){
   const out=[];
-  const done=id=>S.txns.find(t=>t.ruleId===id&&mk(t.date)===m);
+  const done=id=>S.txns.find(t=>t.ruleId===id&&ruleMonthOf(t)===m);
 
   S.fixed.forEach(f=>out.push({
     id:f.id, kind:"fixed", name:f.name, est:n(f.amount), day:ruleDay(f),
@@ -828,9 +911,9 @@ function scheduleFor(m){
   });
 
   S.shared.forEach(s=>out.push({
-    id:s.id, kind:"shared", name:s.name, est:n(s.total), day:ruleDay(s),
+    id:s.id, kind:"shared", name:s.name, est:Math.round(sharedMonthly(s)), day:ruleDay(s),
     acct:s.acct||"", cat:s.cat||"", dir:"out",
-    tag:"分攤 · 你的份 "+fmt(n(s.total)*n(s.myPct)/100)}));
+    tag:"分攤 · "+sharedPeople(s)+" 人分，你的份 "+fmt(sharedMine(s))}));
 
   S.transfers.forEach(t=>out.push({
     id:t.id, kind:"transfer", name:t.name, est:n(t.amount), day:ruleDay(t),
@@ -848,14 +931,14 @@ function scheduleFor(m){
     o.date=dateIn(m,o.day);
     const tx=done(o.id);
     o.tx=tx||null;
-    o.state = tx ? "done" : (o.date>today ? "wait" : (today>dateIn(m,Math.min(28,o.day+3)) ? "late" : "due"));
+    o.state = tx ? "done" : (o.date>today ? "wait" : (today>addDays(o.date,3) ? "late" : "due"));
   });
   return out.sort((a,b)=>a.day-b.day);
 }
 
 /* 已確認的排程金額（用於校正試算） */
 function actualOf(m,ruleId){
-  const t=S.txns.find(x=>x.ruleId===ruleId&&mk(x.date)===m);
+  const t=S.txns.find(x=>x.ruleId===ruleId&&ruleMonthOf(x)===m);
   return t?n(t.amount):undefined;
 }
 
@@ -882,9 +965,10 @@ function calc(){
   // 分攤：已確認的實際總額取代預估，我的份按比例重算
   S.shared.forEach(sh=>{
     const act=actualOf(m,sh.id);
-    const total=act!==undefined?act:n(sh.total);
-    if(act!==undefined) corrected += (act-n(sh.total))*n(sh.myPct)/100;
-    const mine=total*n(sh.myPct)/100;
+    const est=sharedMonthly(sh);                 // 攤提後的每月總額
+    const total=act!==undefined?act:est;
+    if(act!==undefined) corrected += (act-est)/sharedPeople(sh);
+    const mine=total/sharedPeople(sh);
     if(sh.dir==="split") C+=mine;
     else if(sh.dir==="iPay"){ C+=mine; advance+=total-mine; }
     else if(sh.dir==="theyPay") Sk+=mine;
@@ -1138,7 +1222,8 @@ function txRow(t){
   else { tag=[c?c.name:"未分類",a?a.name:"—"]
     .concat(p&&p.id!=="p0"?[p.name]:[]).join(" · "); }
   return '<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
-    +'<span class="m"><b>'+esc(t.note||(DIRALL[t.dir]||{label:"交易"}).label)+'</b><span>'+esc(tag)+'</span></span>'
+    +'<span class="m"><b>'+esc(t.item||t.note||(DIRALL[t.dir]||{label:"交易"}).label)+'</b><span>'
+      +esc(tag+(t.item&&t.note?" · "+t.note:""))+'</span></span>'
     +'<span class="a'+cls+'">'+sign+fmt(n(t.amount))
     +' <button class="del" data-deltx="'+t.id+'" aria-label="刪除">✕</button></span></div>';
 }
@@ -1299,6 +1384,8 @@ function buildEntry(){
   if(!$("#e-date").value) $("#e-date").value=defaultDate();
   const seen=[...new Set(S.txns.map(t=>t.note).filter(Boolean))].reverse().slice(0,60);
   $("#noteList").innerHTML=seen.map(x=>'<option value="'+esc(x)+'"></option>').join("");
+  const seenItem=[...new Set(S.txns.map(t=>t.item).filter(Boolean))].reverse().slice(0,60);
+  $("#itemList").innerHTML=seenItem.map(x=>'<option value="'+esc(x)+'"></option>').join("");
   entryHint();
 }
 function entryHint(){
@@ -1370,7 +1457,11 @@ function toast(msg){
   clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2000);
 }
 function dayOpts(sel){
-  let o=""; for(let i=1;i<=28;i++) o+='<option value="'+i+'"'+(n(sel)===i?" selected":"")+'>'+i+' 號</option>';
+  let o="";
+  for(let i=1;i<=31;i++){
+    const note = i>=29 ? "（短月遞延）" : "";
+    o+='<option value="'+i+'"'+(n(sel)===i?" selected":"")+'>'+i+' 號'+note+'</option>';
+  }
   return o;
 }
 let adType="bank", adId=null;
@@ -1447,19 +1538,23 @@ const EDITORS={
 
   shared:{ title:"分攤項目", listEmpty:"還沒有分攤項目。跟別人平分的訂閱費放這裡。",
     hint:"三種方向的成本都是「你的份」，差別只在現金何時流動。我付全額時，墊出去的差額會進應收池。",
-    blank:()=>({id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""}),
+    blank:()=>({id:uid(),name:"",total:0,span:1,people:2,dir:"split",every:6,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：Netflix"},
-            {k:"total",label:"每月總額",type:"num"},
-            {k:"myPct",label:"我佔 %",type:"num"},
+            {k:"total",label:"金額",type:"num"},
+            {k:"span",label:"金額單位",type:"select",rerender:true,
+             opts:()=>SPAN_OPTS.map(o=>({v:o.v,t:o.t}))},
+            {k:"people",label:"共幾人分攤",type:"num"},
             {k:"dir",label:"付款方式",type:"select",rerender:true,
              opts:()=>Object.keys(DIRNAME).map(k=>({v:k,t:DIRNAME[k]}))},
             {k:"every",label:"每幾個月結算",type:"num",when:o=>o.dir!=="split"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
-    sum:o=>{const total=n(o.total),mine=total*n(o.myPct)/100;
-      return DIRNAME[o.dir]+"　總額 "+money(total)+"　你的成本 <b>"+money(mine)+"／月</b>"
-        +(o.dir==="iPay"?"<br>每月墊 "+money(total-mine)+"，每 "+n(o.every)+" 個月收回 "+money((total-mine)*n(o.every))
+    sum:o=>{const sp=sharedSpan(o), per=sharedMonthly(o), mine=sharedMine(o), ppl=sharedPeople(o);
+      return DIRNAME[o.dir]
+        +"　"+money(n(o.total))+(sp>1?"／"+sp+" 個月，攤成 "+money(per)+"／月":"／月")
+        +"　"+ppl+" 人分　你的成本 <b>"+money(mine)+"／月</b>"
+        +(o.dir==="iPay"?"<br>每月墊 "+money(per-mine)+"，每 "+n(o.every)+" 個月收回 "+money((per-mine)*n(o.every))
          :o.dir==="theyPay"?"<br>每 "+n(o.every)+" 個月付出 "+money(mine*n(o.every)):"");} },
 
   cats:{ title:"類別", listEmpty:"還沒有類別。",
@@ -1574,7 +1669,7 @@ function saveEditor(){
 let stMode=null, stRef=null;   // stMode: "tx" 單筆應收應付 ｜ "shared" 分攤墊款
 function monthsSince(from,to){ return (!from) ? 0 : Math.max(0, monthsBetween(from,to)-1); }
 function sharedAccrued(sh){
-  const total=n(sh.total), mine=total*n(sh.myPct)/100;
+  const total=sharedMonthly(sh), mine=sharedMine(sh);
   const per = sh.dir==="iPay" ? total-mine : sh.dir==="theyPay" ? mine : 0;
   const ms = monthsSince(sh.lastSettled||"", VM());
   return {per, months:ms, amount:per*ms};
@@ -1649,10 +1744,10 @@ function saveAcct(){
 /* ================= 匯出匯入 ================= */
 function csvCell(v){ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
 function buildCSV(){
-  const head=["日期","方向","金額","類別","收支","帳戶","轉入帳戶","專案","目標","備註","已結清"];
+  const head=["日期","方向","金額","項目","類別","收支","帳戶","轉入帳戶","專案","目標","備註","已結清"];
   const rows=S.txns.slice().sort((a,b)=>a.date<b.date?-1:1).map(t=>{
     const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj), g=goalOf(t.goal);
-    return [t.date,(DIRALL[t.dir]||{label:t.dir}).label,n(t.amount),c?c.name:"",c?c.kind:"",
+    return [t.date,(DIRALL[t.dir]||{label:t.dir}).label,n(t.amount),t.item||"",c?c.name:"",c?c.kind:"",
       a?a.name:"",a2?a2.name:"",p?p.name:"",g?g.name:"",t.note||"",
       (t.dir==="ar"||t.dir==="ap")?(t.settled?"是":"否"):""].map(csvCell).join(",");
   });
@@ -1783,12 +1878,12 @@ document.addEventListener("click", async e=>{
     const tx={id:uid(), date:$("#e-date").value||defaultDate(), amount:amt, dir:d,
       acct:(d==="ap"?"":S.ui.acct), acct2:(d==="transfer"?S.ui.acct2:""),
       cat:(d==="transfer"?"":S.ui.cat), proj:((d==="out"||d==="ap")?S.ui.proj:"p0"),
-      note:$("#e-note").value.trim()};
+      item:$("#e-item").value.trim(), note:$("#e-note").value.trim()};
     if(d==="ar"||d==="ap") tx.settled=false;
     const c=catOf(S.ui.cat);
     if(d==="out"&&S.ui.goal){ tx.goal=S.ui.goal; const g=goalOf(S.ui.goal); if(g) g.saved=n(g.saved)+amt; }
     S.txns.push(tx);
-    $("#e-amt").value=""; $("#e-note").value="";
+    $("#e-amt").value=""; $("#e-item").value=""; $("#e-note").value="";
     if(mk(tx.date)!==VM()) S.ui.viewMonth=mk(tx.date);
     renderAll(); save();
     toast("已記錄 "+money(amt));
@@ -1802,7 +1897,7 @@ document.addEventListener("click", async e=>{
     const box=$("#sa-"+rid), amt=n(box?box.value:o.est);
     if(amt<=0){ box&&box.focus(); return; }
     if(!o.acct){ toast("「"+o.name+"」還沒設定扣款帳戶"); return; }
-    const tx={id:uid(), ruleId:rid, date:o.date, amount:amt, dir:o.dir,
+    const tx={id:uid(), ruleId:rid, ruleMonth:VM(), date:o.date, amount:amt, dir:o.dir,
       acct:o.acct, acct2:o.acct2||"", cat:o.cat||"", proj:"p0", note:o.name};
     if(o.goal){ tx.goal=o.goal; const g=goalOf(o.goal); if(g) g.saved=n(g.saved)+amt; }
     S.txns.push(tx);
@@ -1811,7 +1906,7 @@ document.addEventListener("click", async e=>{
   const un=t.closest("[data-undo]");
   if(un){
     const rid=un.dataset.undo, m=VM();
-    const tx=S.txns.find(x=>x.ruleId===rid&&mk(x.date)===m);
+    const tx=S.txns.find(x=>x.ruleId===rid&&ruleMonthOf(x)===m);
     if(tx){
       if(tx.goal){ const g=goalOf(tx.goal); if(g) g.saved=Math.max(0,n(g.saved)-n(tx.amount)); }
       S.txns=S.txns.filter(x=>x.id!==tx.id);
@@ -1870,7 +1965,7 @@ document.addEventListener("click", async e=>{
     const k=t.dataset.add;
     const B={ fixed:{id:uid(),name:"",amount:0,day:1,acct:"",cat:""},
       annual:{id:uid(),name:"",amount:0,start:VM(),end:addMonth(VM(),11),payMonth:addMonth(VM(),11).slice(5),day:1,acct:"",cat:""},
-      shared:{id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""},
+      shared:{id:uid(),name:"",total:0,span:1,people:2,dir:"split",every:6,day:1,acct:"",cat:""},
       transfers:{id:uid(),name:"",amount:0,day:1,from:"",to:""},
       projects:{id:uid(),name:"新專案",kind:"oneoff",goalId:"",cap:0,start:todayISO(),end:todayISO()},
       goals:{id:uid(),name:"",target:0,months:12,saved:0,on:true} };
@@ -1930,6 +2025,16 @@ function normalize(o){
   // v6：類別不再有層級，扣不扣改由交易來源決定
   s.cats.forEach(c=>{ delete c.tier; });
   s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled=""; });
+  /* v7：分攤改用「總額＋涵蓋月數」與「共幾人分」。
+     舊的 myPct 換算成人數（50%→2 人、25%→4 人）；換不出整數就取最接近的。 */
+  s.shared.forEach(x=>{
+    if(x.span===undefined) x.span=1;
+    if(x.people===undefined){
+      const pct=n(x.myPct);
+      x.people = pct>0 ? Math.max(1,Math.round(100/pct)) : 2;
+    }
+    delete x.myPct;
+  });
   s.accounts.forEach(a=>{ if(a.payAcct===undefined) a.payAcct=""; });
   ["fixed","annual","shared","goals"].forEach(k=>s[k].forEach(o=>{ delete o.cat; }));
   s.goals.forEach(g=>{ if(g.cat===undefined) g.cat=""; });
