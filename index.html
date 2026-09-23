@@ -224,6 +224,8 @@ input:disabled,select:disabled{opacity:.5}
 .tx .a.in{color:var(--good)} .tx .a.nt{color:var(--ink-3)}
 .tx .del,.tx .stl{border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 2px;font-size:.8rem}
 .tx .del:hover{color:var(--crit)} .tx .stl:hover{color:var(--accent-ink)}
+.tx .del.armed{color:var(--on-accent); background:var(--crit); border-radius:6px;
+  padding:2px 8px; font-size:.75rem; font-weight:600}
 
 .bars{display:flex; flex-direction:column; gap:9px}
 .bar{display:grid; grid-template-columns:72px 1fr 118px; gap:10px; align-items:center; font-size:.83rem}
@@ -350,12 +352,16 @@ dialog::backdrop{background:rgba(8,12,10,.5)}
 @keyframes fadeUp{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
 @keyframes riseIn{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
 @keyframes flash{ 0%{background:var(--focus-soft)} 100%{background:transparent} }
-/* 分頁切換：淡入＋輕微上移，比單純 fadeIn 有方向感，
-   切換時不會覺得畫面只是「閃一下」。減少動態時整段會被全域規則關掉。 */
-@keyframes panelIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
-.panel:not([hidden]){ animation:panelIn .26s cubic-bezier(.22,.7,.3,1) both; will-change:opacity,transform }
-/* 底部分頁按鈕的選取狀態也跟著過渡，點下去有回饋 */
-nav button{ transition:background .18s ease, color .18s ease, border-color .18s ease }
+/* 分頁切換：往右邊的分頁就從右邊滑進來，往左就從左邊——有方向才像「滑過去」，
+   而不是原地閃一下。曲線用先快後慢的 ease-out，收尾拖長一點，接近水流停下的感覺。
+   減少動態時整段會被全域規則關掉。 */
+@keyframes slideFromRight{ from{opacity:0; transform:translate3d(26px,0,0)} to{opacity:1; transform:none} }
+@keyframes slideFromLeft { from{opacity:0; transform:translate3d(-26px,0,0)} to{opacity:1; transform:none} }
+.panel:not([hidden]){ animation:slideFromRight .34s cubic-bezier(.16,.84,.34,1) both;
+  will-change:opacity,transform }
+.panel.from-left:not([hidden]){ animation-name:slideFromLeft }
+/* 分頁列的選取底線跟著滑，不是瞬間跳過去 */
+nav button{ transition:background .2s ease, color .2s ease, border-color .2s ease }
 nav button:active{ transform:scale(.96) }
 .slide-f,.slide-b{ animation:fadeUp .22s ease both }
 dialog[open] .sheet{ animation:riseIn .2s cubic-bezier(.22,.61,.36,1) both }
@@ -469,6 +475,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   <div class="hrow">
     <h1 id="pageTitle">本月</h1>
     <span class="hact">
+      <button class="btn sm" id="openSearch" aria-label="搜尋">🔍</button>
       <button class="btn sm" id="hideAmt" hidden aria-pressed="false">隱藏金額</button>
       <span class="menuwrap">
         <button class="btn sm pri" id="addAcct" hidden aria-haspopup="menu" aria-expanded="false" aria-label="新增帳戶">＋</button>
@@ -531,6 +538,10 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
 
   <div class="card"><div class="hd"><h2 id="dueTitle">本月排程</h2><span class="fl" id="dueFl">—</span></div>
     <div class="bd tight" id="upcoming"></div></div>
+
+  <div class="card" id="renewCard" hidden><div class="hd"><h2>年繳項目待續期</h2><span class="fl" id="renewFl">—</span></div>
+    <div class="bd tight" id="renewList"></div>
+    <div class="bd sep"><p class="note">攤提區間已經結束。按「續期」會開啟編輯面板，日期已填好下一個年度，<b>金額請自己確認</b>——每年可能不一樣，系統不會替你沿用舊價。</p></div></div>
 
   <div class="card" id="poolCard" hidden><div class="hd"><h2>應收與應付</h2><span class="fl">未結清</span></div>
     <div class="bd tight" id="poolList"></div></div>
@@ -640,6 +651,19 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
       <span style="flex:1"></span>
       <button class="btn" type="button" id="ed-cancel">取消</button>
       <button class="btn pri" type="button" id="ed-ok">確認</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="sqDlg" aria-labelledby="sqTitle">
+  <div class="sheet">
+    <div class="sheet-hd"><h2 id="sqTitle">搜尋</h2>
+      <button class="btn x" type="button" id="sq-x" aria-label="關閉">✕</button></div>
+    <div class="sheet-bd">
+      <label class="fld"><span>關鍵字</span>
+        <input type="text" id="sq-q" placeholder="項目、備註、類別、帳戶都會找" autocomplete="off"></label>
+      <p class="note" id="sq-sum" aria-live="polite">輸入關鍵字開始搜尋。</p>
+      <div class="bd tight" id="sq-list"></div>
     </div>
   </div>
 </dialog>
@@ -984,6 +1008,19 @@ function scheduleFor(m){
     id:t.id, kind:"transfer", name:t.name, est:n(t.amount), day:ruleDay(t),
     acct:t.from||"", acct2:t.to||"", cat:"", dir:"transfer", tag:"轉帳 · 不扣額度"}));
 
+  /* 信用卡繳款：把「錢實際從銀行流出去」這件事也排進待確認。
+     方向是 transfer（銀行 → 卡片），不是 out——消費當下已經扣過日常額度了，
+     繳卡費只是還債，記成 out 會同一筆錢扣兩次。
+     只有設了繳款帳戶、且該期帳單金額 > 0 才產生。 */
+  S.accounts.filter(a=>a.type==="card"&&a.payAcct).forEach(a=>{
+    const p=stmtForMonth(a,m), amt=sumCard(a.id,p.s,p.e);
+    if(amt<=0) return;
+    out.push({id:"cardpay:"+a.id, kind:"cardpay", name:a.name+" 繳款", est:amt,
+      day:Math.min(31,Math.max(1,n(a.due)||1)),
+      acct:a.payAcct, acct2:a.id, cat:"", dir:"transfer",
+      tag:"卡費繳款 · 不扣額度　"+md(p.s)+"–"+md(p.e)});
+  });
+
   S.goals.filter(g=>g.on&&n(g.day)>0).forEach(g=>{
     const pmt=n(g.months)>0?Math.max(0,(n(g.target)-n(g.saved))/n(g.months)):0;
     out.push({id:g.id, kind:"goal", name:g.name+" 提撥", est:Math.round(pmt), day:ruleDay(g),
@@ -999,6 +1036,13 @@ function scheduleFor(m){
     o.state = tx ? "done" : (o.date>today ? "wait" : (today>addDays(o.date,3) ? "late" : "due"));
   });
   return out.sort((a,b)=>a.day-b.day);
+}
+
+/* 年繳項目到期偵測。
+   刻意不自動改寫設定——金額每年可能不同（停車費會漲），靜默續期會把錯的數字
+   帶進試算。改成列出到期項目，由使用者按一下開編輯面板、確認金額後才存。 */
+function annualDue(m){
+  return S.annual.filter(a=>a.end && a.end < m);
 }
 
 /* 已確認的排程金額（用於校正試算） */
@@ -1161,6 +1205,18 @@ function paint(){
       '<div class="step'+(x.ok?" done":"")+'"><span class="mk'+(x.ok?" ok":"")+'">'+(x.ok?"✓":"○")+'</span>'
       +'<span class="tx2">'+x.t+'<span>'+x.s+'</span></span>'
       +(x.ok?'<span></span>':'<button class="btn sm" data-goto="'+x.tab+'">前往</button>')+'</div>').join("");
+  }
+
+  {
+    const due=annualDue(r.m);
+    $("#renewCard").hidden = due.length===0;
+    if(due.length){
+      $("#renewFl").textContent=due.length+" 項";
+      $("#renewList").innerHTML=due.map(a=>
+        '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b>'
+        +'<button class="btn sm pri" data-renew="'+a.id+'">續期</button></div>'
+        +'<div class="meta">上期 '+a.start+' – '+a.end+'　'+money(n(a.amount))+'</div></div>').join("");
+    }
   }
 
   const done=!!S.confirmed[r.m];
@@ -1522,6 +1578,7 @@ function renderAll(){ buildEntry(); buildLists(); paint(); }
 
 /* ================= 提示與帳戶對話框 ================= */
 let toastT=null;
+let delArm=null;   // 交易刪除的兩段式確認：{id, t}
 function toast(msg){
   const el=$("#toast"); el.textContent=msg; el.classList.add("on");
   clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2000);
@@ -1574,6 +1631,7 @@ const EDITORS={
     blank:()=>({id:uid(),name:"",amount:0,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：房租"},
             {k:"amount",label:"每月金額",type:"num"},
+            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
@@ -1588,6 +1646,7 @@ const EDITORS={
             {k:"start",label:"攤提起",type:"month"},
             {k:"end",label:"攤提迄",type:"month"},
             {k:"payMonth",label:"付款月份",type:"select",opts:()=>Array.from({length:12},(_,i)=>({v:String(i+1).padStart(2,"0"),t:(i+1)+" 月"}))},
+            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"付款日",type:"day"},
             {k:"acct",label:"付款帳戶",type:"acct"}],
 
@@ -1617,6 +1676,7 @@ const EDITORS={
             {k:"dir",label:"付款方式",type:"select",rerender:true,
              opts:()=>Object.keys(DIRNAME).map(k=>({v:k,t:DIRNAME[k]}))},
             {k:"every",label:"每幾個月結算",type:"num",when:o=>o.dir!=="split"},
+            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
@@ -1733,6 +1793,34 @@ function saveEditor(){
   else { S[edKind].push(edDraft); toast("新增成功"); }
   $("#edDlg").close();
   buildEntry(); buildLists(); paint(); save();
+}
+
+/* ================= 全站搜尋 =================
+   比對項目、備註、類別名稱、帳戶名稱與金額。不分大小寫，
+   多個關鍵字用空白隔開時要全部命中（AND），比單一字串好用。 */
+function searchTxns(q){
+  const keys=q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if(!keys.length) return [];
+  return S.txns.filter(t=>{
+    const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj);
+    const hay=[t.item, t.note, c&&c.name, a&&a.name, a2&&a2.name, p&&p.name,
+               t.date, String(n(t.amount))].filter(Boolean).join(" ").toLowerCase();
+    return keys.every(k=>hay.includes(k));
+  }).sort((x,y)=>x.date<y.date?1:-1);
+}
+function renderSearch(){
+  const q=$("#sq-q").value;
+  const rows=searchTxns(q);
+  if(!q.trim()){
+    $("#sq-sum").textContent="輸入關鍵字開始搜尋。";
+    $("#sq-list").innerHTML=""; return;
+  }
+  const sum=rows.reduce((s,t)=>s+n(t.amount),0);
+  $("#sq-sum").innerHTML = rows.length
+    ? "找到 <b>"+rows.length+"</b> 筆　合計 <b>"+money(sum)+"</b>"
+    : "找不到符合的紀錄。";
+  $("#sq-list").innerHTML = rows.slice(0,200).map(txRow).join("")
+    + (rows.length>200?'<p class="meta">只顯示前 200 筆，請再加關鍵字縮小範圍。</p>':"");
 }
 
 /* ================= 帳戶明細面板 =================
@@ -1925,8 +2013,20 @@ document.addEventListener("change", e=>{
   if(t.id==="e-goal"){ S.ui.goal=t.value; save(); }
 });
 
+/* 點擊目標正規化。
+   分頁按鈕裡的圖示是 <svg>，而 SVG 元素是 SVGElement、**不是** HTMLElement——
+   舊寫法 `if(!(t instanceof HTMLElement)) return;` 會把點在圖示上的事件整個擋掉，
+   症狀就是「點了分頁沒反應，要點好幾次」。這裡先往上找到最近的 HTML 元素。 */
+function evTarget(e){
+  const raw=e.target;
+  if(!(raw instanceof Element)) return null;
+  if(raw instanceof HTMLElement) return raw;
+  const up=raw.closest("button,a,label,div,span,li,td,th");
+  return up instanceof HTMLElement ? up : (raw.parentElement||null);
+}
+
 document.addEventListener("click", async e=>{
-  const t=e.target; if(!(t instanceof HTMLElement)) return;
+  const t=evTarget(e); if(!t) return;
   const tab=t.closest("nav button"); if(tab){ goTab(tab.dataset.t); return; }
   const gt=t.closest("[data-goto]"); if(gt){ goTab(gt.dataset.goto); return; }
 
@@ -2030,7 +2130,25 @@ document.addEventListener("click", async e=>{
   if(t.id==="st-ok"){ doSettle(); return; }
   if(t.id==="st-cancel"||t.id==="st-x"||t.id==="stDlg"){ $("#stDlg").close(); return; }
   const dtx=t.closest("[data-deltx]");
-  if(dtx){ S.txns=S.txns.filter(x=>x.id!==dtx.dataset.deltx); paint(); save(); toast("已刪除這筆"); return; }
+  if(dtx){
+    /* 交易列的 ✕ 很容易誤觸，改成兩段式：第一次變成「刪？」並反白，
+       4 秒內再按一次才真的刪；期間點別處或逾時就自己收回。 */
+    const id=dtx.dataset.deltx;
+    if(delArm && delArm.id===id){
+      clearTimeout(delArm.t); delArm=null;
+      S.txns=S.txns.filter(x=>x.id!==id); paint(); save(); toast("已刪除這筆"); return;
+    }
+    if(delArm){ clearTimeout(delArm.t); const p=document.querySelector('[data-deltx="'+delArm.id+'"]');
+      if(p){ p.textContent="✕"; p.classList.remove("armed"); } }
+    dtx.textContent="刪？"; dtx.classList.add("armed");
+    delArm={id, t:setTimeout(()=>{
+      const el=document.querySelector('[data-deltx="'+id+'"]');
+      if(el){ el.textContent="✕"; el.classList.remove("armed"); }
+      delArm=null;
+    },4000)};
+    toast("再按一次刪除");
+    return;
+  }
 
   const fx=t.closest("[data-fixdiff]");
   if(fx){
@@ -2076,6 +2194,24 @@ document.addEventListener("click", async e=>{
   }
 
   // ---- 帳戶明細面板 ----
+  const rn=t.closest("[data-renew]");
+  if(rn){
+    const a=S.annual.find(x=>x.id===rn.dataset.renew);
+    if(a){
+      /* 日期整體往後推 12 個月，金額不帶——讓他自己 key 一次，
+         避免漲價那年靜默沿用舊金額。 */
+      openEditor("annual", null, {
+        name:a.name, amount:0,
+        start:addMonth(a.start,12), end:addMonth(a.end,12),
+        payMonth:a.payMonth, day:a.day, acct:a.acct, cat:a.cat||""
+      });
+      toast("日期已填好，金額請自己確認");
+    }
+    return;
+  }
+  if(t.id==="openSearch"){ $("#sq-q").value=""; renderSearch(); $("#sqDlg").showModal();
+    setTimeout(()=>$("#sq-q").focus(),60); return; }
+  if(t.id==="sq-x"||t.id==="sqDlg"){ $("#sqDlg").close(); return; }
   if(t.id==="adt-x"||t.id==="adtDlg"){ $("#adtDlg").close(); return; }
   if(t.id==="adtPrev"||t.id==="adtNext"){
     adtMonth=addMonth(adtMonth, t.id==="adtNext"?1:-1); renderAcctDtl(); return;
@@ -2174,8 +2310,9 @@ function normalize(o){
     delete x.myPct;
   });
   s.accounts.forEach(a=>{ if(a.payAcct===undefined) a.payAcct=""; });
-  ["fixed","annual","shared","goals"].forEach(k=>s[k].forEach(o=>{ delete o.cat; }));
-  s.goals.forEach(g=>{ if(g.cat===undefined) g.cat=""; });
+  /* v7：固定支出、年繳攤提、分攤要帶類別，確認扣款產生的交易才能進到
+     跟手動記帳一樣的類別統計裡。（v6 曾把 cat 清掉，那時類別還有層級。） */
+  ["fixed","annual","shared","goals"].forEach(k=>s[k].forEach(o=>{ if(o.cat===undefined) o.cat=""; }));
   s.projects.forEach(p=>{ if(p.cap===undefined) p.cap=0; });
   if(!["system","light","dark"].includes(s.theme)) s.theme="system";
   if(!["now","entry","stat","acct","setup"].includes(s.homeTab)) s.homeTab="now";
@@ -2199,11 +2336,21 @@ function applyTheme(){
   }catch(e){}
 }
 const TABNAME={now:"本月",acct:"帳戶",entry:"記帳",stat:"統計",setup:"設定"};
+let curTab="now";   // 給切換動畫判斷方向用
 function goTab(tab){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===tab)));
   ["now","entry","stat","acct","setup"].forEach(k=>{ $("#p-"+k).hidden=(k!==tab); });
   /* 頂端列依分頁換內容：標題永遠是當前分頁，月份切換只有「本月」用得到，
      新增帳戶與隱藏金額只在「帳戶」出現。 */
+  /* 依分頁在列上的先後決定滑入方向。動畫靠移除再加上 class 重新觸發，
+     否則連點同一側時不會重播。 */
+  const order=["now","acct","entry","stat","setup"];
+  const from=order.indexOf(curTab), to=order.indexOf(tab);
+  const back = from>-1 && to>-1 && to<from;
+  const pnl=$("#p-"+tab);
+  if(pnl){ pnl.classList.remove("from-left"); void pnl.offsetWidth; if(back) pnl.classList.add("from-left"); }
+  curTab=tab;
+
   $("#pageTitle").textContent = TABNAME[tab] || "餘裕";
   $("#mnav").hidden   = tab!=="now";
   $("#addAcct").hidden= tab!=="acct";
@@ -2302,8 +2449,8 @@ document.addEventListener("focusout",()=>{
 /* ---------- 頂端列與帳戶頁的雜項互動 ---------- */
 // 點選單以外的地方、或按 Esc，收起新增帳戶選單
 document.addEventListener("click", e=>{
-  const t=e.target;
-  if(!(t instanceof HTMLElement)) return;
+  const t=evTarget(e);
+  if(!t) return;
   if(!t.closest("#addAcctMenu") && t.id!=="addAcct") closeAddMenu();
 }, true);
 document.addEventListener("keydown", e=>{
@@ -2345,6 +2492,7 @@ function syncHideBtn(){
 
   document.addEventListener("input", e=>{
     const t=e.target; if(!(t instanceof HTMLElement)) return;
+    if(t.id==="sq-q"){ renderSearch(); return; }
     if(t.id==="e-amt"){
       t.dataset.touched="1";
       if(n(t.value)>0 && errShown("#e-hint",/金額/)) entryHint();
