@@ -22,6 +22,10 @@
   --good:#5E7042; --crit:#9B4A34; --crit-soft:#F7DDD4;
   --c1:#2F6B93; --c2:#8A6114; --c3:#5E7042; --c4:#9B4A34;
   --c5:#4E8AA8; --c6:#A88449; --c7:#8C9268; --c8:#8A7266;
+  /* 按鈕統一規格 */
+  --btn-r:8px; --btn-h:38px; --btn-h-sm:32px;
+  /* 收支顏色走台股慣例：收入紅、支出綠（跟歐美相反，這是使用者指定的） */
+  --income:#9B4A34; --expense:#5E7042;
   /* 單行輸入欄的統一高度，手機斷點會拉到 44px（觸控尺寸） */
   --field-h:42px;
   /* 帳戶類別色帶：沿用既有五色的家族，不另外引進新色相 */
@@ -44,6 +48,7 @@
   --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
   --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
   --k-card-bg:#47251C; --k-card-ink:#E29079;
+  --income:#E29079; --expense:#A8BF7E;
 }}
 :root[data-theme="dark"]{
   --paper:#2A1A14; --surface:#372319; --surface-2:#432D22; --field:#40291F;
@@ -58,6 +63,7 @@
   --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
   --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
   --k-card-bg:#47251C; --k-card-ink:#E29079;
+  --income:#E29079; --expense:#A8BF7E;
 }
 
 *{box-sizing:border-box}
@@ -79,7 +85,17 @@ header{padding-block:22px 12px; display:flex; flex-direction:column; gap:10px}
 .mnav{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .mnav .lbl{font-family:var(--font); font-size:.95rem; font-weight:600; min-width:92px; text-align:center}
 .mnav .sub{font-family:var(--font); font-size:.7rem; color:var(--ink-3)}
-.mnav input[type=month]{width:auto; padding:4px 8px; font-size:.8rem}
+/* 月份數字本身就是選擇器：把原生 month 欄位透明疊在文字上，
+   點哪裡都會叫出系統的月份選單。原本旁邊那個獨立輸入框拿掉了——
+   停在當月時會跟中間的文字顯示成兩個一樣的年月，看起來像重複。 */
+.lblwrap{position:relative; display:inline-flex; align-items:center}
+.lblwrap .lbl{pointer-events:none}
+.lblwrap:hover .lbl{color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px}
+.mnav input[type=month]{
+  position:absolute; inset:0; width:100%; height:100%;
+  opacity:0; cursor:pointer; padding:0; margin:0; border:0; min-height:0}
+.mnav input[type=month]:focus-visible{opacity:0; outline:none}
+.lblwrap:focus-within .lbl{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
 
 /* 桌面：五個分頁平均撐滿容器寬度，不要擠在左邊一小撮 */
 nav{display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
@@ -164,20 +180,29 @@ input.n{font-family:var(--font); font-variant-numeric:tabular-nums; text-align:r
 input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 input:disabled,select:disabled{opacity:.5}
 
-.btn{appearance:none; font:inherit; font-size:.83rem; padding:7px 13px; border-radius:7px; cursor:pointer;
+/* 按鈕統一規格：同一個圓角、同一種框線、兩級高度（一般 / sm）。
+   之前各處自己調 padding 與圓角，看起來有方有圓、有大有小。
+   --btn-r 與 --btn-h 統一控制，要調整只改這兩個值。 */
+.btn{appearance:none; font:inherit; font-size:.83rem; padding:0 14px; border-radius:var(--btn-r); cursor:pointer;
+  min-height:var(--btn-h); display:inline-flex; align-items:center; justify-content:center; gap:6px;
   border:1px solid var(--rule-strong); background:var(--surface); color:var(--ink-2);
   transition:background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease}
 .btn:hover{border-color:var(--accent); color:var(--accent-ink)}
-.btn.sm{font-size:.74rem; padding:4px 9px}
+.btn.sm{font-size:.76rem; padding:0 11px; min-height:var(--btn-h-sm)}
 .btn.pri{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:500}
 .btn.pri:hover{opacity:.9; color:var(--on-accent)}
 .btn.danger{border-color:var(--crit); color:var(--crit)}
 .btn.danger:hover{background:var(--crit-soft); color:var(--crit)}
-.btn.x{border:0; background:none; color:var(--ink-3); padding:3px 6px; font-size:.95rem; line-height:1}
+/* 只有「關閉 ✕」這種圖示鈕不帶框，其餘一律同規格 */
+.btn.x{border:0; background:none; color:var(--ink-3); padding:0 8px; font-size:1rem; line-height:1}
 .btn.x:hover{color:var(--crit)}
 .btn[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
-.btn.ord{padding:2px 7px; font-size:.75rem; line-height:1.3}
-.btn.nav{padding:4px 10px; font-family:var(--font)}
+.btn.ord{padding:0 9px; font-size:.76rem; min-height:var(--btn-h-sm)}
+.btn.nav{padding:0 12px; font-family:var(--font); min-height:var(--btn-h-sm)}
+/* 圖示鈕：正方形，寬高一致 */
+.btn.ico{padding:0; width:var(--btn-h); min-width:var(--btn-h)}
+.btn.ico.sm{width:var(--btn-h-sm); min-width:var(--btn-h-sm)}
+.btn.ico svg{width:17px; height:17px; display:block}
 .btnrow{display:flex; gap:8px; flex-wrap:wrap}
 
 .item{display:grid; grid-template-columns:1fr auto; gap:7px 10px; padding:10px 0; border-bottom:1px solid var(--rule)}
@@ -205,7 +230,8 @@ input:disabled,select:disabled{opacity:.5}
 .amtbox input{font-family:var(--font); font-size:1.7rem; font-weight:600; text-align:right;
   border:0; background:none; padding:4px 0; letter-spacing:-.02em}
 .chips{display:flex; flex-wrap:wrap; gap:6px}
-.chip{appearance:none; font:inherit; font-size:.82rem; padding:5px 11px; border-radius:14px; cursor:pointer;
+.chip{appearance:none; font:inherit; font-size:.82rem; padding:0 12px; border-radius:var(--btn-r); cursor:pointer;
+  min-height:var(--btn-h-sm); display:inline-flex; align-items:center;
   border:1px solid var(--rule-strong); background:var(--surface); color:var(--ink-2); white-space:nowrap}
 .chip:hover{border-color:var(--accent)}
 .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
@@ -221,7 +247,10 @@ input:disabled,select:disabled{opacity:.5}
 .tx .m{min-width:0} .tx .m b{font-weight:500; font-size:.88rem}
 .tx .m span{display:block; font-size:.72rem; color:var(--ink-3); font-family:var(--font)}
 .tx .a{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:.88rem; white-space:nowrap; text-align:right}
-.tx .a.in{color:var(--good)} .tx .a.nt{color:var(--ink-3)}
+/* 收入紅、支出綠。轉帳與沖銷維持中性灰，不參與紅綠。 */
+.tx .a{color:var(--expense)}
+.tx .a.in{color:var(--income)}
+.tx .a.nt{color:var(--ink-3)}
 .tx .del,.tx .stl{border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 2px;font-size:.8rem}
 .tx .del:hover{color:var(--crit)} .tx .stl:hover{color:var(--accent-ink)}
 .tx .del.armed{color:var(--on-accent); background:var(--crit); border-radius:6px;
@@ -438,12 +467,13 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   .sheet-bd{overflow-y:auto}
   #toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
 
-  /* 觸控目標放大：WCAG 建議可點擊區域至少 44×44 */
-  .btn{padding:9px 14px; font-size:.86rem; min-height:44px}
-  .btn.sm{padding:7px 11px; font-size:.79rem; min-height:44px}
-  .btn.x{padding:8px 10px; font-size:1.05rem; min-height:44px; min-width:44px}
-  .btn.ord{padding:6px 10px; min-height:44px; min-width:44px}
-  .btn.nav{min-height:44px; min-width:44px}   /* 上下個月箭頭，每月都要點 */
+  /* 觸控目標放大：WCAG 建議可點擊區域至少 44×44。
+     高度統一由變數控制，各類按鈕不再各自調 padding。 */
+  :root{--btn-h:44px; --btn-h-sm:44px}
+  .btn{font-size:.86rem}
+  .btn.sm{font-size:.8rem}
+  .btn.x{min-width:44px; font-size:1.1rem}
+  .btn.nav,.btn.ord{min-width:44px}
   .chip{padding:9px 14px; font-size:.88rem}
   .sw{padding:4px 0}
   /* 交易列的 ✕ 與「結清」：把可點範圍撐到 44×44，但用負邊距吸收掉，
@@ -475,8 +505,8 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   <div class="hrow">
     <h1 id="pageTitle">本月</h1>
     <span class="hact">
-      <button class="btn sm" id="openSearch" aria-label="搜尋">🔍</button>
-      <button class="btn sm" id="hideAmt" hidden aria-pressed="false">隱藏金額</button>
+      <button class="btn sm ico" id="openSearch" aria-label="搜尋" title="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/></svg></button>
+      <button class="btn sm ico" id="hideAmt" hidden aria-pressed="false" aria-label="隱藏金額" title="隱藏金額"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
       <span class="menuwrap">
         <button class="btn sm pri" id="addAcct" hidden aria-haspopup="menu" aria-expanded="false" aria-label="新增帳戶">＋</button>
         <div class="menu" id="addAcctMenu" role="menu" hidden>
@@ -491,10 +521,12 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   </div>
   <div class="mnav" id="mnav">
     <button class="btn nav" id="mPrev" aria-label="上個月">←</button>
-    <span class="lbl" id="mLabel">—</span>
+    <span class="lblwrap">
+      <span class="lbl" id="mLabel">—</span>
+      <input type="month" id="mJump" aria-label="選擇月份">
+    </span>
     <button class="btn nav" id="mNext" aria-label="下個月">→</button>
     <button class="btn sm" id="mToday" hidden>回到本月</button>
-    <input type="month" id="mJump" aria-label="跳到指定月份">
     <span class="sub" id="mSub"></span>
   </div>
 </header>
@@ -581,6 +613,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
       <span style="display:flex;gap:5px">
         <button class="btn sm" data-scope="daily" aria-pressed="true">只看日常</button>
         <button class="btn sm" data-scope="all" aria-pressed="false">全部</button>
+        <p class="note" id="statHint" aria-live="polite" hidden></p>
       </span></div>
     <div class="bd"><div class="bars" id="catBars"></div></div>
     <div class="bd tight sep" id="catDetail"></div>
@@ -926,6 +959,10 @@ function setAmtHidden(v){
   try{ localStorage.setItem("yuyu.hideAmt", amtHidden?"1":"0"); }catch(e){}
 }
 const MASK="＄ ••••";
+/* 眼睛圖示：宣告必須早於啟動時的 syncHideBtn() 呼叫，
+   否則 const 的暫時性死區會讓啟動流程整個中斷。 */
+const EYE_OPEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2"/></svg>';
+const EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6.5 0 10.2 6.5 10.2 6.5a17 17 0 0 1-3.3 4.1M6.3 7.9A17 17 0 0 0 1.8 12S5.5 18.5 12 18.5a9.5 9.5 0 0 0 3.6-.7"/><path d="M9.8 9.8a3.2 3.2 0 0 0 4.4 4.4"/><path d="M3 3l18 18"/></svg>';
 const mny = (v,c) => amtHidden ? MASK : money(v,c);   // 帳戶頁專用
 const mfm = v      => amtHidden ? MASK : fmt(v);
 
@@ -1312,10 +1349,10 @@ function paint(){
     });
     r.arOpen.forEach(t=>h+='<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
       +'<span class="m"><b>應收 · '+esc(t.note||"—")+'</b><span>你先墊，對方未還</span></span>'
-      +'<span class="a" style="color:var(--good)">+'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
+      +'<span class="a" style="color:var(--income)">+'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
     r.apOpen.forEach(t=>h+='<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
       +'<span class="m"><b>應付 · '+esc(t.note||"—")+'</b><span>別人先付，你未還</span></span>'
-      +'<span class="a" style="color:var(--crit)">−'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
+      +'<span class="a" style="color:var(--expense)">−'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
     $("#poolList").innerHTML=h;
   } else pc.hidden=true;
 
@@ -1351,11 +1388,25 @@ function txRow(t){
 
 function paintStat(r){
   const scope=S.ui.scope||"daily";
+  // 按鈕的 aria-pressed 原本寫死在 HTML，重新載入後會跟實際狀態對不上
+  document.querySelectorAll("[data-scope]").forEach(b=>
+    b.setAttribute("aria-pressed", String(b.dataset.scope===scope)));
   const pool=r.mtx.filter(t=>hitsBudget(t)&&(scope==="daily"?t.proj==="p0":true));
   const by={}; pool.forEach(t=>{ const k=t.cat||"_"; by[k]=(by[k]||0)+n(t.amount); });
   const total=Object.values(by).reduce((a,b)=>a+b,0);
   const arr=Object.entries(by).map(([k,v])=>({k,name:(catOf(k)||{name:"未分類"}).name,v})).sort((a,b)=>b.v-a.v);
   const max=arr.length?arr[0].v:1;
+  /* 預設只看日常，指定了專案的交易會被濾掉。以前畫面完全不提，
+     使用者會以為「記了但沒統計到」。這裡把被藏起來的筆數講出來。 */
+  const hidden = scope==="daily"
+    ? r.mtx.filter(t=>hitsBudget(t)&&t.proj!=="p0")
+    : [];
+  $("#statHint").innerHTML = hidden.length
+    ? '另有 <b>'+hidden.length+'</b> 筆記在專案裡（'+money(hidden.reduce((a,t)=>a+n(t.amount),0))
+      +'），沒算進這裡。切到「全部」可以看到。'
+    : "";
+  $("#statHint").hidden = hidden.length===0;
+
   $("#catBars").innerHTML=arr.map((c,i)=>
     '<div class="bar"><span class="lb">'+esc(c.name)+'</span>'
     +'<span class="tr"><i style="width:'+(c.v/max*100).toFixed(1)+'%;background:'+CPAL[i%8]+'"></i></span>'
@@ -1701,7 +1752,7 @@ hint:"類別只用於分類統計。要不要從額度扣，是看這筆的來�
     fields:[{k:"name",label:"專案名稱",type:"text",ph:"例如：日本旅遊"},
             {k:"goalId",label:"資金來源",type:"select",rerender:true,when:o=>o.kind==="oneoff",
              opts:()=>[{v:"",t:"不綁目標（手動上限）"}].concat(S.goals.map(g=>({v:g.id,t:"綁定「"+g.name+"」"})))},
-            {k:"cap",label:"每月上限",type:"num",
+            {k:"cap",label:"專案上限",type:"num",
              when:o=>(o.kind==="recurring"&&o.id!=="p0")||(o.kind==="oneoff"&&!o.goalId)},
             {k:"start",label:"起始日",type:"date",when:o=>o.kind==="oneoff"},
             {k:"end",label:"結束日",type:"date",when:o=>o.kind==="oneoff"}],
@@ -2186,10 +2237,9 @@ document.addEventListener("click", async e=>{
   }
 
   // ---- 隱藏金額 ----
-  if(t.id==="hideAmt"){
+  if(t.closest("#hideAmt")){
     setAmtHidden(!amtHidden);
-    t.setAttribute("aria-pressed",String(amtHidden));
-    t.textContent = amtHidden ? "顯示金額" : "隱藏金額";
+    syncHideBtn();
     paint(); return;
   }
 
@@ -2463,10 +2513,14 @@ document.addEventListener("keydown", e=>{
   }
 });
 // 啟動時把「隱藏金額」的按鈕文字對上實際狀態
+/* 睜眼＝目前看得到金額（按下去會藏）；閉眼＝目前是藏起來的（按下去會顯示）。
+   純圖示沒有文字，所以 aria-label 與 title 要跟著換，不然螢幕報讀器講不出狀態。 */
 function syncHideBtn(){
   const b=$("#hideAmt"); if(!b) return;
   b.setAttribute("aria-pressed",String(amtHidden));
-  b.textContent = amtHidden ? "顯示金額" : "隱藏金額";
+  b.innerHTML = amtHidden ? EYE_OFF : EYE_OPEN;
+  const lbl = amtHidden ? "顯示金額" : "隱藏金額";
+  b.setAttribute("aria-label",lbl); b.setAttribute("title",lbl);
 }
 
 /* ---------- 即時驗證 ----------
