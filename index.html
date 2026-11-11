@@ -556,6 +556,19 @@ dialog[open] .sheet{animation:popIn .32s var(--spring) both}
   dialog[open] .sheet{animation:sheetUp .38s var(--ease) both}
   #toast{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
 }
+
+/* ---------- v3.1：導覽列尺寸 ---------- */
+@media (min-width:721px){
+  .wrap{max-width:clamp(860px,78vw,1280px)}
+  nav{display:flex; width:100%; padding:5px; margin-bottom:22px}
+  nav button{flex:1; padding:clamp(10px,.9vw,15px) 10px; font-size:clamp(.95rem,1.15vw,1.2rem)}
+}
+@media (max-width:720px){
+  .wrap{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  nav{left:0; right:0; bottom:0; border-radius:22px 22px 0 0;
+    padding:8px 10px calc(6px + env(safe-area-inset-bottom,0px)); box-shadow:0 -4px 18px rgba(81,50,41,.12)}
+  #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 
 </head>
@@ -2583,7 +2596,7 @@ function renderSetup(){
   const found=secOf(setupNav[1]);
   crumb.hidden=false;
   crumb.innerHTML='<button class="bk" data-sback>‹ '+found.g.name+'</button><span class="now">'+found.s.name+'</span>';
-  menu.hidden=true;
+  menu.hidden=true; menu.style.display="none";
   const el=document.querySelector('#p-setup [data-sec="'+setupNav[1]+'"]');
   if(el){ el.hidden=false; anim(el); }
 }
