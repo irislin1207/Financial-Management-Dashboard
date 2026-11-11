@@ -907,6 +907,20 @@ dialog[open] .sheet{animation:popIn .32s var(--spring) both}
           <button class="btn danger" id="wipe">全部清空</button>
         </div>
         <p class="note" id="impNote">匯入與清空都會覆蓋現有資料，需要按兩次確認。</p>
+
+        <h3 style="margin-top:6px">從 Excel 匯入</h3>
+        <div class="btnrow">
+          <a class="btn" href="yuyu-import-template.xlsx" download style="text-decoration:none">下載範本</a>
+          <button class="btn" id="xlPick" type="button">選擇 Excel 檔</button>
+          <input type="file" id="xlFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+        </div>
+        <div class="btnrow" role="radiogroup" aria-label="匯入方式">
+          <label class="sw"><input type="radio" name="xlMode" value="add" checked>新增到現有資料</label>
+          <label class="sw"><input type="radio" name="xlMode" value="replace">清空後重建</label>
+        </div>
+        <div id="xlPreview" hidden></div>
+        <div class="btnrow"><button class="btn pri" id="xlGo" type="button" hidden>確認匯入</button></div>
+        <p class="note" id="xlNote">照範本填好帳戶、固定支出、記帳等工作表後選檔，會先列出讀到的內容，確認後才寫入。「新增」會略過同名的項目與重複的交易。</p>
       </div>
     </div>
   </div>
@@ -2152,6 +2166,253 @@ function arm(id,btn,label,go){
   const prev=btn.textContent; btn.textContent="再按一次確認";
   armed[id]={t:setTimeout(()=>{ delete armed[id]; btn.textContent=prev; },4000)};
 }
+
+/* ================= Excel 匯入 =================
+   不依賴外部程式庫：xlsx 是 zip 包著 XML，用瀏覽器內建的 DecompressionStream 解開。 */
+const XL={sheets:null, plan:null, file:""};
+async function readXlsx(buf){
+  const u8=new Uint8Array(buf), dv=new DataView(buf), td=new TextDecoder();
+  let i=u8.length-22; while(i>=0&&dv.getUint32(i,true)!==0x06054b50) i--;
+  if(i<0) throw new Error("這不是有效的 Excel（.xlsx）檔");
+  const cnt=dv.getUint16(i+10,true), files={}; let p=dv.getUint32(i+16,true);
+  for(let k=0;k<cnt&&dv.getUint32(p,true)===0x02014b50;k++){
+    const nl=dv.getUint16(p+28,true), el=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    files[td.decode(u8.subarray(p+46,p+46+nl))]={method:dv.getUint16(p+10,true), csize:dv.getUint32(p+20,true), off:dv.getUint32(p+42,true)};
+    p+=46+nl+el+cl;
+  }
+  const get=async name=>{
+    const f=files[name]; if(!f) return null;
+    const start=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true), raw=u8.subarray(start,start+f.csize);
+    if(f.method===0) return td.decode(raw);
+    if(f.method!==8||typeof DecompressionStream==="undefined") throw new Error("這個瀏覽器無法讀取 Excel 檔，請更新瀏覽器後再試");
+    return td.decode(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+  };
+  const xml=t=>new DOMParser().parseFromString(t,"application/xml");
+  const tags=(node,name)=>Array.from(node.getElementsByTagNameNS("*",name));
+  const text=node=>node?tags(node,"t").filter(t=>t.parentNode.localName!=="rPh").map(t=>t.textContent).join(""):"";
+  const wbx=await get("xl/workbook.xml"); if(!wbx) throw new Error("這不是有效的 Excel（.xlsx）檔");
+  const rels={}; const rx=await get("xl/_rels/workbook.xml.rels");
+  if(rx) tags(xml(rx),"Relationship").forEach(r=>{ const t=r.getAttribute("Target")||""; rels[r.getAttribute("Id")]=t.startsWith("/")?t.slice(1):"xl/"+t; });
+  const sx=await get("xl/sharedStrings.xml"), sst=sx?tags(xml(sx),"si").map(text):[];
+  const out={};
+  for(const sh of tags(xml(wbx),"sheet")){
+    const path=rels[sh.getAttribute("r:id")||sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")];
+    const body=path?await get(path):null; if(!body) continue;
+    const rows=[];
+    tags(xml(body),"row").forEach(row=>{
+      const r=(parseInt(row.getAttribute("r"),10)||rows.length+1)-1, arr=[];
+      tags(row,"c").forEach(c=>{
+        const m=(c.getAttribute("r")||"").match(/^[A-Z]+/); let ci=arr.length;
+        if(m){ ci=0; for(const ch of m[0]) ci=ci*26+(ch.charCodeAt(0)-64); ci--; }
+        const tp=c.getAttribute("t"), v=tags(c,"v")[0], raw=v?v.textContent:"";
+        let val="";
+        if(tp==="s") val=sst[parseInt(raw,10)]||"";
+        else if(tp==="inlineStr") val=text(tags(c,"is")[0]);
+        else if(tp==="str") val=raw;
+        else if(tp==="b") val=raw==="1"?"是":"否";
+        else if(tp!=="e"&&raw!==""){ const x=parseFloat(raw); val=isFinite(x)?x:raw; }
+        arr[ci]=val;
+      });
+      rows[r]=arr;
+    });
+    out[sh.getAttribute("name")]=rows;
+  }
+  return out;
+}
+/* 工作表 → 每列一個物件，欄位用標題文字對應（＊與空白不計） */
+function xlRows(sheet){
+  if(!sheet||!sheet.length) return [];
+  const head=(sheet[0]||[]).map(h=>String(h==null?"":h).replace(/[＊*\s]/g,"")), out=[];
+  for(let i=1;i<sheet.length;i++){
+    const a=sheet[i]; if(!a) continue;
+    const o={_r:i+1}; let any=false;
+    head.forEach((h,j)=>{ if(!h) return; let v=a[j]; if(typeof v==="string") v=v.trim();
+      if(v!==undefined&&v!==null&&v!=="") any=true; o[h]=(v===undefined||v===null)?"":v; });
+    if(any) out.push(o);
+  }
+  return out;
+}
+const xlStr=v=>String(v==null?"":v).trim();
+const xlNum=v=>typeof v==="number"?v:n(v);
+const xlDay=v=>{ const d=Math.round(xlNum(v)); return d>=1&&d<=28?d:0; };
+function xlDate(v){
+  if(typeof v==="number"&&v>20000&&v<80000) return new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000).toISOString().slice(0,10);
+  const m=xlStr(v).match(/^(\d{4})[-\/.](\d{1,2})(?:[-\/.](\d{1,2}))?/); if(!m) return "";
+  const mm=+m[2], dd=+(m[3]||1); if(mm<1||mm>12||dd<1||dd>31) return "";
+  return m[1]+"-"+String(mm).padStart(2,"0")+"-"+String(dd).padStart(2,"0");
+}
+const XLMAP={
+  type:{"銀行":"bank","現金":"cash","證券":"sec","信用卡":"card"},
+  share:{"各付各的":"split","我付全額":"iPay","對方付全額":"theyPay"},
+  dir:{"支出":"out","收入":"in","轉帳":"transfer","應收":"ar","應付":"ap"}};
+
+/* 讀到的內容 → 要新增的資料與逐表報告。mode: add（加到現有）｜replace（清空後重建） */
+function xlPlan(sheets,mode){
+  const keep=mode!=="replace";
+  const base={accounts:keep?S.accounts:[], fixed:keep?S.fixed:[], annual:keep?S.annual:[], transfers:keep?S.transfers:[],
+    shared:keep?S.shared:[], goals:keep?S.goals:[], txns:keep?S.txns:[], cats:keep?S.cats:DEFAULT_CATS.map(c=>({...c}))};
+  const add={accounts:[],fixed:[],annual:[],transfers:[],shared:[],goals:[],txns:[],cats:[]}, report=[];
+  const all=k=>base[k].concat(add[k]);
+  const A=v=>{ const k=xlStr(v); return k?(all("accounts").find(a=>a.name===k)||null):undefined; };
+  const AID=(v,label,opt)=>{ const a=A(v);
+    if(a===undefined){ if(opt&&opt.req) throw label+"必填"; return ""; }
+    if(a===null) throw "找不到"+label+"「"+xlStr(v)+"」，請先填在「帳戶」工作表";
+    if(opt&&opt.noCard&&a.type==="card") throw label+"不能是信用卡";
+    return a.id; };
+  const NAME=(o,k)=>{ const v=xlStr(o[k||"名稱"]); if(!v) throw "缺少"+(k||"名稱"); return v; };
+  const POS=(o,k)=>{ const v=xlNum(o[k]); if(!(v>0)) throw k+"要填大於 0 的數字"; return v; };
+  const DAY=(o,k)=>{ const d=xlDay(o[k]); if(!d) throw k+"要填 1 到 28"; return d; };
+  const dup=(k,name)=>all(k).some(x=>x.name===name);
+  const sec=(name,fn)=>{
+    const rows=xlRows(sheets[name]), r={sheet:name,ok:0,skip:0,errs:[],names:[]};
+    rows.forEach(o=>{ let e; try{ e=fn(o,r); }catch(x){ e=(x&&x.message)||String(x); }
+      if(e===true) r.ok++; else if(e===null) r.skip++; else r.errs.push("第 "+o._r+" 列："+e); });
+    if(rows.length) report.push(r);
+    return r;
+  };
+  const tm=thisMonth();
+
+  const ra=sec("帳戶",(o,r)=>{
+    const name=NAME(o,"帳戶名稱"), type=XLMAP.type[xlStr(o["類型"])];
+    if(!type) throw "類型要填 銀行、現金、證券 或 信用卡";
+    if(A(name)) return null;
+    const a={id:uid(),name,type,currency:xlStr(o["幣別"]).toUpperCase()||"TWD",balance:type==="card"?0:xlNum(o["起始餘額"]),payAcct:""};
+    if(!CURR.includes(a.currency)) throw "不支援的幣別「"+a.currency+"」";
+    if(type==="card"){
+      a.close=xlDay(o["結帳日"]); a.due=xlDay(o["繳款日"]);
+      if(!a.close||!a.due) throw "信用卡要填結帳日與繳款日（1 到 28）";
+      a.stmtAmt={}; a.marked={}; a.marked[addMonth(tm,-1)]=true; a.marked[addMonth(tm,-2)]=true;
+      a._pay=xlStr(o["繳款帳戶"]);
+    }
+    add.accounts.push(a); r.names.push(name); return true;
+  });
+  add.accounts.forEach(a=>{
+    if(a._pay){ const b=A(a._pay);
+      if(b&&b.type==="bank") a.payAcct=b.id;
+      else ra.errs.push("信用卡「"+a.name+"」的繳款帳戶「"+a._pay+"」不是已知的銀行帳戶，已留空"); }
+    delete a._pay;
+  });
+
+  sec("固定支出",(o,r)=>{ const name=NAME(o); if(dup("fixed",name)) return null;
+    add.fixed.push({id:uid(),name,amount:POS(o,"每月金額"),day:DAY(o,"扣款日"),acct:AID(o["扣款帳戶"],"扣款帳戶"),cat:""});
+    r.names.push(name); return true; });
+
+  const YM=(o,k)=>{ const d=xlDate(o[k]); if(!d) throw k+"要填 2026-01 這種格式"; return d.slice(0,7); };
+  sec("年繳攤提",(o,r)=>{ const name=NAME(o); if(dup("annual",name)) return null;
+    const start=YM(o,"攤提起"), end=YM(o,"攤提迄"), pm=Math.round(xlNum(o["付款月份"]));
+    if(start>end) throw "攤提起不能晚於攤提迄";
+    if(!(pm>=1&&pm<=12)) throw "付款月份要填 1 到 12";
+    add.annual.push({id:uid(),name,amount:POS(o,"總金額"),start,end,payMonth:String(pm).padStart(2,"0"),
+      day:DAY(o,"付款日"),acct:AID(o["付款帳戶"],"付款帳戶"),cat:""});
+    r.names.push(name); return true; });
+
+  sec("固定轉帳",(o,r)=>{ const name=NAME(o); if(dup("transfers",name)) return null;
+    const from=AID(o["轉出帳戶"],"轉出帳戶",{req:true}), to=AID(o["轉入帳戶"],"轉入帳戶",{req:true});
+    if(from===to) throw "轉出與轉入不能是同一個帳戶";
+    add.transfers.push({id:uid(),name,amount:POS(o,"金額"),day:DAY(o,"轉帳日"),from,to});
+    r.names.push(name); return true; });
+
+  sec("分攤項目",(o,r)=>{ const name=NAME(o); if(dup("shared",name)) return null;
+    const dir=XLMAP.share[xlStr(o["付款方式"])]; if(!dir) throw "付款方式要填 各付各的、我付全額 或 對方付全額";
+    const people=Math.round(xlNum(o["分攤人數"])); if(!(people>=1)) throw "分攤人數要填 1 以上的整數";
+    add.shared.push({id:uid(),name,total:POS(o,"每月總額"),people,dir,every:Math.max(1,Math.round(xlNum(o["每幾個月結算"]))||6),
+      day:DAY(o,"扣款日"),acct:AID(o["扣款帳戶"],"扣款帳戶"),cat:"",lastSettled:""});
+    r.names.push(name); return true; });
+
+  sec("儲蓄目標",(o,r)=>{ const name=NAME(o); if(dup("goals",name)) return null;
+    const months=Math.round(xlNum(o["期限（月）"]||o["期限(月)"]||o["期限"])); if(!(months>=1)) throw "期限要填 1 以上的月數";
+    add.goals.push({id:uid(),name,target:POS(o,"目標金額"),months,saved:Math.max(0,xlNum(o["已存金額"])),
+      on:xlStr(o["本月提撥"])!=="否",day:xlDay(o["扣款日"]),acct:AID(o["扣款帳戶"],"扣款帳戶",{noCard:true}),cat:""});
+    r.names.push(name); return true; });
+
+  const seen=new Set(base.txns.map(t=>[t.date,t.dir,n(t.amount),t.acct||"",t.acct2||"",t.note||""].join("|")));
+  sec("記帳",(o,r)=>{
+    const date=xlDate(o["日期"]); if(!date) throw "日期要填 2026-11-10 這種格式";
+    const dir=XLMAP.dir[xlStr(o["方向"])]; if(!dir) throw "方向要填 支出、收入、轉帳、應收 或 應付";
+    const amount=POS(o,"金額"), note=xlStr(o["備註"]);
+    let acct="", acct2="", cat="";
+    if(dir==="transfer"){
+      acct=AID(o["帳戶"],"帳戶",{req:true}); acct2=AID(o["轉入帳戶"],"轉入帳戶",{req:true});
+      if(acct===acct2) throw "轉出與轉入不能是同一個帳戶";
+    } else if(dir!=="ap"){
+      acct=AID(o["帳戶"],"帳戶",{req:true});
+      if(dir==="in"&&acctOfIn(acct)) throw "收入不能記在信用卡";
+    }
+    if(dir!=="transfer"){
+      const cn=xlStr(o["類別"]), kind=dir==="in"?"in":"out";
+      if(cn){ let c=all("cats").find(x=>x.name===cn&&x.kind===kind);
+        if(!c){ c={id:uid(),name:cn,kind}; add.cats.push(c); }
+        cat=c.id; }
+    }
+    const key=[date,dir,amount,acct,acct2,note].join("|");
+    if(seen.has(key)) return null;
+    const tx={id:uid(),date,amount,dir,acct,acct2,cat,proj:"p0",note};
+    if(dir==="ar"||dir==="ap") tx.settled=false;
+    add.txns.push(tx); return true;
+  });
+  function acctOfIn(id){ const a=all("accounts").find(x=>x.id===id); return !!a&&a.type==="card"; }
+
+  const total=Object.keys(add).reduce((a,k)=>a+(k==="cats"?0:add[k].length),0);
+  return {add,report,mode,total,newCats:add.cats.map(c=>c.name)};
+}
+function xlPaint(){
+  const box=$("#xlPreview"), go=$("#xlGo"), p=XL.plan;
+  if(!p){ box.hidden=true; go.hidden=true; return; }
+  const KNOWN=["帳戶","固定支出","年繳攤提","固定轉帳","分攤項目","儲蓄目標","記帳"];
+  box.hidden=false;
+  box.innerHTML='<div class="blk"><div class="top"><b>'+esc(XL.file)+'</b><span class="pill '+(p.total?"g":"a")+'">可匯入 '+p.total+' 筆</span></div>'
+    +(p.report.length?"":'<div class="meta">沒有讀到任何資料。請確認工作表名稱是 '+KNOWN.join("、")+'。</div>')+'</div>'
+    +p.report.map(r=>'<div class="blk"><div class="top"><b>'+esc(r.sheet)+'</b><span class="meta">新增 <b>'+r.ok+'</b> 筆'
+      +(r.skip?'　已存在略過 '+r.skip+' 筆':'')+(r.errs.length?'　<span style="color:var(--crit-ink)">有問題 '+r.errs.length+' 筆</span>':'')+'</span></div>'
+      +(r.names.length?'<div class="meta">'+esc(r.names.slice(0,8).join("、"))+(r.names.length>8?" 等 "+r.names.length+" 項":"")+'</div>':'')
+      +(r.errs.length?'<div class="meta" style="color:var(--crit-ink)">'+r.errs.slice(0,8).map(esc).join("<br>")
+        +(r.errs.length>8?"<br>…另有 "+(r.errs.length-8)+" 筆":"")+'</div>':'')+'</div>').join("")
+    +(p.newCats.length?'<div class="blk"><div class="meta">會自動新增類別：'+esc(p.newCats.join("、"))+'</div></div>':'');
+  go.hidden=!p.total;
+  go.textContent=p.mode==="replace"?"清空現有資料並匯入 "+p.total+" 筆":"匯入 "+p.total+" 筆";
+  delete armed["xl"];
+  $("#xlNote").textContent=p.mode==="replace"
+    ? "「清空後重建」會刪除現有的帳戶、排程、目標與交易，只保留外觀與試算參數。需要按兩次確認。"
+    : "有問題的列不會匯入，改好後重新選檔即可；已經匯入過的項目與交易會自動略過。";
+}
+function xlRebuild(){
+  if(!XL.sheets){ XL.plan=null; xlPaint(); return; }
+  const mode=(document.querySelector('input[name="xlMode"]:checked')||{}).value||"add";
+  XL.plan=xlPlan(XL.sheets,mode); xlPaint();
+}
+function xlApply(){
+  const p=XL.plan; if(!p||!p.total) return;
+  if(p.mode==="replace"){
+    const keepSet={theme:S.theme,homeTab:S.homeTab,payDay:S.payDay,bufferPct:S.bufferPct,incomeFallback:S.incomeFallback};
+    S=Object.assign(blank(),keepSet);
+  }
+  Object.keys(p.add).forEach(k=>{ S[k]=S[k].concat(p.add[k]); });
+  S=normalize(S);
+  XL.sheets=null; XL.plan=null; $("#xlFile").value=""; xlPaint();
+  applyTheme(); renderAll(); save();
+  $("#xlNote").textContent="已匯入 "+p.total+" 筆。到帳戶頁與本月頁確認數字是否正確。";
+  toast("已匯入 "+p.total+" 筆");
+}
+document.addEventListener("change", async e=>{
+  const t=e.target;
+  if(t.name==="xlMode"){ xlRebuild(); return; }
+  if(t.id!=="xlFile") return;
+  const f=t.files&&t.files[0]; if(!f) return;
+  $("#xlNote").textContent="讀取中…";
+  try{
+    XL.sheets=await readXlsx(await f.arrayBuffer()); XL.file=f.name; xlRebuild();
+  }catch(err){
+    XL.sheets=null; XL.plan=null; xlPaint();
+    $("#xlNote").textContent="讀取失敗："+((err&&err.message)||err);
+  }
+});
+document.addEventListener("click", e=>{
+  const t=e.target;
+  if(t.id==="xlPick"){ $("#xlFile").click(); return; }
+  if(t.id==="xlGo"){
+    if(XL.plan&&XL.plan.mode==="replace") arm("xl",t,t.textContent,xlApply); else xlApply();
+  }
+});
 
 /* ================= 事件 ================= */
 const inLists = el => !!(el&&el.closest&&(el.closest("#p-setup")||el.closest("#p-acct")));
