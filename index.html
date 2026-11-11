@@ -1,6 +1,3 @@
-﻿<html lang="zh-Hant-TW">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>餘裕</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -22,17 +19,6 @@
   --good:#5E7042; --crit:#9B4A34; --crit-soft:#F7DDD4;
   --c1:#2F6B93; --c2:#8A6114; --c3:#5E7042; --c4:#9B4A34;
   --c5:#4E8AA8; --c6:#A88449; --c7:#8C9268; --c8:#8A7266;
-  /* 按鈕統一規格 */
-  --btn-r:8px; --btn-h:38px; --btn-h-sm:32px;
-  /* 收支顏色走台股慣例：收入紅、支出綠（跟歐美相反，這是使用者指定的） */
-  --income:#9B4A34; --expense:#5E7042;
-  /* 單行輸入欄的統一高度，手機斷點會拉到 44px（觸控尺寸） */
-  --field-h:42px;
-  /* 帳戶類別色帶：沿用既有五色的家族，不另外引進新色相 */
-  --k-bank-bg:#D8EBF9; --k-bank-ink:#24536F;
-  --k-cash-bg:#E7EDD6; --k-cash-ink:#4C5C2E;
-  --k-sec-bg:#FCE6B7;  --k-sec-ink:#7A5511;
-  --k-card-bg:#F7DDD4; --k-card-ink:#8C4A3F;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   /* 深色：MOTHER EARTH 當底，其餘四色浮上來當字 */
@@ -44,11 +30,6 @@
   --good:#A8BF7E; --crit:#E29079; --crit-soft:#47251C;
   --c1:#9CCBE8; --c2:#F0CE84; --c3:#A8BF7E; --c4:#E29079;
   --c5:#6FA7C6; --c6:#C9A664; --c7:#879466; --c8:#B49C8C;
-  --k-bank-bg:#1E3A4A; --k-bank-ink:#BBDCF2;
-  --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
-  --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
-  --k-card-bg:#47251C; --k-card-ink:#E29079;
-  --income:#E29079; --expense:#A8BF7E;
 }}
 :root[data-theme="dark"]{
   --paper:#2A1A14; --surface:#372319; --surface-2:#432D22; --field:#40291F;
@@ -59,11 +40,6 @@
   --good:#A8BF7E; --crit:#E29079; --crit-soft:#47251C;
   --c1:#9CCBE8; --c2:#F0CE84; --c3:#A8BF7E; --c4:#E29079;
   --c5:#6FA7C6; --c6:#C9A664; --c7:#879466; --c8:#B49C8C;
-  --k-bank-bg:#1E3A4A; --k-bank-ink:#BBDCF2;
-  --k-cash-bg:#2B3324; --k-cash-ink:#C3D49B;
-  --k-sec-bg:#46341A;  --k-sec-ink:#F0CE84;
-  --k-card-bg:#47251C; --k-card-ink:#E29079;
-  --income:#E29079; --expense:#A8BF7E;
 }
 
 *{box-sizing:border-box}
@@ -85,35 +61,15 @@ header{padding-block:22px 12px; display:flex; flex-direction:column; gap:10px}
 .mnav{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .mnav .lbl{font-family:var(--font); font-size:.95rem; font-weight:600; min-width:92px; text-align:center}
 .mnav .sub{font-family:var(--font); font-size:.7rem; color:var(--ink-3)}
-/* 月份數字本身就是選擇器：把原生 month 欄位透明疊在文字上，
-   點哪裡都會叫出系統的月份選單。原本旁邊那個獨立輸入框拿掉了——
-   停在當月時會跟中間的文字顯示成兩個一樣的年月，看起來像重複。 */
-.lblwrap{position:relative; display:inline-flex; align-items:center}
-.lblwrap .lbl{pointer-events:none}
-.lblwrap:hover .lbl{color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px}
-.mnav input[type=month]{
-  position:absolute; inset:0; width:100%; height:100%;
-  opacity:0; cursor:pointer; padding:0; margin:0; border:0; min-height:0}
-.mnav input[type=month]:focus-visible{opacity:0; outline:none}
-.lblwrap:focus-within .lbl{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+.mnav input[type=month]{width:auto; padding:4px 8px; font-size:.8rem}
 
-/* 桌面：五個分頁平均撐滿容器寬度，不要擠在左邊一小撮 */
-nav{display:grid; grid-template-columns:repeat(5,1fr); gap:4px;
-  border-bottom:1px solid var(--rule-strong); margin-bottom:20px}
+nav{display:flex; gap:2px; border-bottom:1px solid var(--rule-strong); margin-bottom:20px; overflow-x:auto}
 nav button{appearance:none; background:none; border:0; border-bottom:2px solid transparent; margin-bottom:-1px;
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  padding:13px 10px; min-height:48px; border-radius:8px 8px 0 0;
-  font:inherit; font-size:1rem; font-weight:500; color:var(--ink-3); cursor:pointer; white-space:nowrap;
-  transition:background .15s ease, color .15s ease}
-nav button[aria-selected="true"]{color:var(--accent-ink); border-bottom-color:var(--accent); font-weight:600}
-nav button:hover{color:var(--ink); background:var(--accent-soft)}
-nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
+  padding:9px 14px; font:inherit; font-size:.89rem; font-weight:500; color:var(--ink-3); cursor:pointer; white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--accent-ink); border-bottom-color:var(--accent)}
+nav button:hover{color:var(--ink)}
 
 .panel{display:flex; flex-direction:column; gap:20px}
-/* [hidden] 是瀏覽器預設樣式，會被任何 class 的 display 蓋過
-   （.fld{display:flex}、.grid2{display:grid} 都會）。
-   沒有這條，JS 設了 el.hidden=true 的欄位仍然看得見。 */
-[hidden]{display:none !important}
 .panel[hidden]{display:none}
 
 .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:11px}
@@ -133,17 +89,6 @@ nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 .card>.bd.sep{border-top:1px solid var(--rule); padding-top:13px; margin-top:2px}
 .sub-hd{padding:11px 15px 6px; display:flex; justify-content:space-between; align-items:baseline; gap:10px}
 .sub-hd+.bd.tight{padding-top:0}
-/* 帳戶頁：四種類別各給一條底色帶，捲動時一眼分得出現在看的是哪一類。
-   顏色走 CSS 變數，深色模式由 :root 那三處一起定義——直接寫
-   [data-theme="dark"] 會漏掉「跟隨系統＋系統是深色」那種情況，
-   因為那時 data-theme 屬性是被移除的。 */
-.sub-hd.k{padding:9px 15px; border-left:4px solid currentColor; align-items:center}
-.sub-hd.k h3{color:inherit; font-weight:700; letter-spacing:.02em}
-.sub-hd.k .fl{color:inherit; opacity:.85}
-.sub-hd.k-bank{color:var(--k-bank-ink); background:var(--k-bank-bg)}
-.sub-hd.k-cash{color:var(--k-cash-ink); background:var(--k-cash-bg)}
-.sub-hd.k-sec {color:var(--k-sec-ink);  background:var(--k-sec-bg)}
-.sub-hd.k-card{color:var(--k-card-ink); background:var(--k-card-bg)}
 
 .step{display:grid; grid-template-columns:auto 1fr auto; gap:11px; padding:10px 0; border-bottom:1px solid var(--rule); align-items:center}
 .step:last-child{border-bottom:0}
@@ -158,51 +103,25 @@ nav button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px}
 input,select,textarea{font:inherit; font-size:.9rem; padding:8px 11px; border:1px solid var(--rule-strong); border-radius:7px;
   background:var(--field); color:var(--ink); width:100%; min-width:0;
   transition:border-color .12s ease, box-shadow .12s ease}
-/* date／month 有瀏覽器內建外觀：內部 shadow DOM 自帶 padding 與行高，
-   算出來會比旁邊的文字欄高 2px，同一列並排就對不齊——看起來就是「跑掉」。
-   這裡把內部盒子歸零，再用 --field-h 把所有單行欄位拉到同一高度。 */
-/* 用 height 而不是 min-height：min-height 只設下限，文字欄在手機的 16px 字級下
-   會自己長到 47px，日期欄卻停在下限，兩者又對不齊。固定高度才能真的釘死。 */
-input:not([type=checkbox]),select{height:var(--field-h)}
-input[type=date],input[type=month]{
-  -webkit-appearance:none; appearance:none;
-  width:100%; min-width:0; box-sizing:border-box; text-align:left; line-height:normal}
-input[type=date]::-webkit-datetime-edit,
-input[type=month]::-webkit-datetime-edit{padding:0; line-height:normal}
-input[type=date]::-webkit-datetime-edit-fields-wrapper,
-input[type=month]::-webkit-datetime-edit-fields-wrapper{padding:0}
-input[type=date]::-webkit-date-and-time-value,
-input[type=month]::-webkit-date-and-time-value{text-align:left; margin:0}
-input[type=date]::-webkit-calendar-picker-indicator,
-input[type=month]::-webkit-calendar-picker-indicator{margin-left:auto; opacity:.65; cursor:pointer}
 textarea{font-family:var(--font); font-size:.78rem; min-height:90px; resize:vertical}
 input.n{font-family:var(--font); font-variant-numeric:tabular-nums; text-align:right}
 input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
 input:disabled,select:disabled{opacity:.5}
 
-/* 按鈕統一規格：同一個圓角、同一種框線、兩級高度（一般 / sm）。
-   之前各處自己調 padding 與圓角，看起來有方有圓、有大有小。
-   --btn-r 與 --btn-h 統一控制，要調整只改這兩個值。 */
-.btn{appearance:none; font:inherit; font-size:.83rem; padding:0 14px; border-radius:var(--btn-r); cursor:pointer;
-  min-height:var(--btn-h); display:inline-flex; align-items:center; justify-content:center; gap:6px;
+.btn{appearance:none; font:inherit; font-size:.83rem; padding:7px 13px; border-radius:7px; cursor:pointer;
   border:1px solid var(--rule-strong); background:var(--surface); color:var(--ink-2);
   transition:background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease}
 .btn:hover{border-color:var(--accent); color:var(--accent-ink)}
-.btn.sm{font-size:.76rem; padding:0 11px; min-height:var(--btn-h-sm)}
+.btn.sm{font-size:.74rem; padding:4px 9px}
 .btn.pri{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:500}
 .btn.pri:hover{opacity:.9; color:var(--on-accent)}
 .btn.danger{border-color:var(--crit); color:var(--crit)}
 .btn.danger:hover{background:var(--crit-soft); color:var(--crit)}
-/* 只有「關閉 ✕」這種圖示鈕不帶框，其餘一律同規格 */
-.btn.x{border:0; background:none; color:var(--ink-3); padding:0 8px; font-size:1rem; line-height:1}
+.btn.x{border:0; background:none; color:var(--ink-3); padding:3px 6px; font-size:.95rem; line-height:1}
 .btn.x:hover{color:var(--crit)}
 .btn[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
-.btn.ord{padding:0 9px; font-size:.76rem; min-height:var(--btn-h-sm)}
-.btn.nav{padding:0 12px; font-family:var(--font); min-height:var(--btn-h-sm)}
-/* 圖示鈕：正方形，寬高一致 */
-.btn.ico{padding:0; width:var(--btn-h); min-width:var(--btn-h)}
-.btn.ico.sm{width:var(--btn-h-sm); min-width:var(--btn-h-sm)}
-.btn.ico svg{width:17px; height:17px; display:block}
+.btn.ord{padding:2px 7px; font-size:.75rem; line-height:1.3}
+.btn.nav{padding:4px 10px; font-family:var(--font)}
 .btnrow{display:flex; gap:8px; flex-wrap:wrap}
 
 .item{display:grid; grid-template-columns:1fr auto; gap:7px 10px; padding:10px 0; border-bottom:1px solid var(--rule)}
@@ -230,8 +149,7 @@ input:disabled,select:disabled{opacity:.5}
 .amtbox input{font-family:var(--font); font-size:1.7rem; font-weight:600; text-align:right;
   border:0; background:none; padding:4px 0; letter-spacing:-.02em}
 .chips{display:flex; flex-wrap:wrap; gap:6px}
-.chip{appearance:none; font:inherit; font-size:.82rem; padding:0 12px; border-radius:var(--btn-r); cursor:pointer;
-  min-height:var(--btn-h-sm); display:inline-flex; align-items:center;
+.chip{appearance:none; font:inherit; font-size:.82rem; padding:5px 11px; border-radius:14px; cursor:pointer;
   border:1px solid var(--rule-strong); background:var(--surface); color:var(--ink-2); white-space:nowrap}
 .chip:hover{border-color:var(--accent)}
 .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
@@ -247,14 +165,11 @@ input:disabled,select:disabled{opacity:.5}
 .tx .m{min-width:0} .tx .m b{font-weight:500; font-size:.88rem}
 .tx .m span{display:block; font-size:.72rem; color:var(--ink-3); font-family:var(--font)}
 .tx .a{font-family:var(--font); font-variant-numeric:tabular-nums; font-size:.88rem; white-space:nowrap; text-align:right}
-/* 收入紅、支出綠。轉帳與沖銷維持中性灰，不參與紅綠。 */
-.tx .a{color:var(--expense)}
-.tx .a.in{color:var(--income)}
-.tx .a.nt{color:var(--ink-3)}
+.tx .a.in{color:var(--good)} .tx .a.nt{color:var(--ink-3)}
+.tx .a small{display:block; font-size:.71rem; color:var(--ink-3); font-weight:400}
+.tile[hidden]{display:none}
 .tx .del,.tx .stl{border:0;background:none;color:var(--ink-3);cursor:pointer;padding:0 2px;font-size:.8rem}
 .tx .del:hover{color:var(--crit)} .tx .stl:hover{color:var(--accent-ink)}
-.tx .del.armed{color:var(--on-accent); background:var(--crit); border-radius:6px;
-  padding:2px 8px; font-size:.75rem; font-weight:600}
 
 .bars{display:flex; flex-direction:column; gap:9px}
 .bar{display:grid; grid-template-columns:72px 1fr 118px; gap:10px; align-items:center; font-size:.83rem}
@@ -264,31 +179,6 @@ input:disabled,select:disabled{opacity:.5}
 .bar .vv{text-align:right; font-family:var(--font); font-variant-numeric:tabular-nums; white-space:nowrap; font-size:.8rem}
 .bar .vv em{font-style:normal; color:var(--ink-3); margin-left:6px}
 
-/* 頂端列右側的動作區 */
-.hact{display:flex; align-items:center; gap:8px}
-.hact #saveState{white-space:nowrap}
-#addAcct{font-size:1.05rem; line-height:1; padding:6px 12px}
-
-/* 新增帳戶的下拉選單。定位基準是按鈕自己的包裝元素——
-   直接用 absolute 靠 header 定位的話，靜態位置在 flex 容器裡算出來會蓋住按鈕。 */
-.menuwrap{position:relative; display:inline-flex}
-.menu{position:absolute; top:100%; right:0; z-index:70; margin-top:6px;
-  background:var(--surface); border:1px solid var(--rule-strong); border-radius:10px;
-  padding:6px; box-shadow:0 10px 28px rgba(0,0,0,.18);
-  display:flex; flex-direction:column; gap:2px; min-width:150px}
-.menu button{appearance:none; background:none; border:0; font:inherit; color:var(--ink);
-  text-align:left; padding:10px 12px; border-radius:7px; cursor:pointer; min-height:44px}
-.menu button:hover{background:var(--accent-soft)}
-.menu button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
-
-/* 明細面板裡的月份列 */
-.adt-nav{margin:10px 0 4px; justify-content:center}
-
-/* 帳戶列整列可點——點任一處開明細；「編輯」鈕自己攔掉事件 */
-.blk.tap{cursor:pointer; border-radius:8px; margin-inline:-8px; padding-inline:8px;
-  transition:background .15s ease}
-.blk.tap:hover{background:var(--surface-2)}
-.blk.tap:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
 .blk{display:flex; flex-direction:column; gap:8px; padding:13px 0; border-bottom:1px solid var(--rule)}
 .blk:last-child{border-bottom:0}
 .blk .top{display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap}
@@ -381,17 +271,7 @@ dialog::backdrop{background:rgba(8,12,10,.5)}
 @keyframes fadeUp{ from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
 @keyframes riseIn{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
 @keyframes flash{ 0%{background:var(--focus-soft)} 100%{background:transparent} }
-/* 分頁切換：往右邊的分頁就從右邊滑進來，往左就從左邊——有方向才像「滑過去」，
-   而不是原地閃一下。曲線用先快後慢的 ease-out，收尾拖長一點，接近水流停下的感覺。
-   減少動態時整段會被全域規則關掉。 */
-@keyframes slideFromRight{ from{opacity:0; transform:translate3d(26px,0,0)} to{opacity:1; transform:none} }
-@keyframes slideFromLeft { from{opacity:0; transform:translate3d(-26px,0,0)} to{opacity:1; transform:none} }
-.panel:not([hidden]){ animation:slideFromRight .34s cubic-bezier(.16,.84,.34,1) both;
-  will-change:opacity,transform }
-.panel.from-left:not([hidden]){ animation-name:slideFromLeft }
-/* 分頁列的選取底線跟著滑，不是瞬間跳過去 */
-nav button{ transition:background .2s ease, color .2s ease, border-color .2s ease }
-nav button:active{ transform:scale(.96) }
+.panel:not([hidden]){ animation:fadeIn .22s ease both }
 .slide-f,.slide-b{ animation:fadeUp .22s ease both }
 dialog[open] .sheet{ animation:riseIn .2s cubic-bezier(.22,.61,.36,1) both }
 dialog[open]::backdrop{ animation:fadeIn .18s ease both }
@@ -419,7 +299,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{
   box-shadow:0 4px 16px rgba(0,0,0,.14)}
 #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 
-nav button svg{display:block; width:19px; height:19px; flex:none}
+nav button svg{display:none}
 
 @media (max-width:540px){
   .row{grid-template-columns:1fr 112px}
@@ -451,11 +331,8 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   nav button svg{display:block; width:21px; height:21px}
   nav button[aria-selected="true"]{border-bottom-color:transparent; background:var(--accent-soft)}
 
-  /* iOS 聚焦時會放大畫面，字級要 ≥16px；高度拉到 44px 同時滿足觸控尺寸。
-     核取方塊要排除，不然開關會被撐開。 */
-  :root{--field-h:46px}   /* ≥44px 同時滿足觸控尺寸 */
-  input:not([type=checkbox]),select{font-size:16px; padding:9px 11px}
-  textarea{font-size:16px; padding:9px 11px}
+  /* iOS 聚焦時會放大畫面，字級要 ≥16px */
+  input,select,textarea{font-size:16px; padding:9px 11px}
   .amtbox input{font-size:1.85rem}
   .item .fields input.n{width:92px}
   .sch .act input{width:92px; font-size:16px}
@@ -467,28 +344,87 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
   .sheet-bd{overflow-y:auto}
   #toast{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
 
-  /* 觸控目標放大：WCAG 建議可點擊區域至少 44×44。
-     高度統一由變數控制，各類按鈕不再各自調 padding。 */
-  :root{--btn-h:44px; --btn-h-sm:44px}
-  .btn{font-size:.86rem}
-  .btn.sm{font-size:.8rem}
-  .btn.x{min-width:44px; font-size:1.1rem}
-  .btn.nav,.btn.ord{min-width:44px}
+  /* 觸控目標放大 */
+  .btn{padding:9px 14px; font-size:.86rem}
+  .btn.sm{padding:7px 11px; font-size:.79rem}
+  .btn.x{padding:8px 10px; font-size:1.05rem}
+  .btn.ord{padding:6px 10px}
   .chip{padding:9px 14px; font-size:.88rem}
   .sw{padding:4px 0}
-  /* 交易列的 ✕ 與「結清」：把可點範圍撐到 44×44，但用負邊距吸收掉，
-     版面密度維持原樣，只是手指比較好按。 */
-  .tx .del,.tx .stl{
-    font-size:.9rem; padding:0;
-    min-width:44px; min-height:44px; margin:-11px -6px -11px 0;
-    display:inline-flex; align-items:center; justify-content:center}
-}
-/* 寬螢幕：容器放寬，不要左右各空一大塊。
-   文字段落仍靠 .wrap 內的卡片自行斷行，不會拉成難讀的長行。 */
-@media (min-width:1200px){
-  .wrap{max-width:1100px}
+  .tx .del,.tx .stl{padding:4px 6px; font-size:.9rem}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+/* ================= v2 版面：一個主數字 → 今天要處理 → 各帳戶預留 ================= */
+.hero{background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px;
+  padding:20px 20px 18px; display:flex; flex-direction:column; gap:6px}
+.hero.warn{background:var(--crit-soft); border-color:var(--crit)}
+.hero-top{display:flex; justify-content:space-between; align-items:center; gap:10px}
+.hero .eyebrow{font-size:.88rem; color:var(--ink-2)}
+.hero-v{font-size:clamp(2.3rem,9vw,3.1rem); font-weight:700; line-height:1.15; letter-spacing:-.02em;
+  color:var(--accent-ink); font-variant-numeric:tabular-nums}
+.hero.warn .hero-v{color:var(--crit)}
+.hero-sub{font-size:.9rem; color:var(--ink-2)}
+.meter{position:relative; height:10px; background:var(--surface); border-radius:5px; margin-top:10px}
+.meter i{display:block; height:100%; max-width:100%; border-radius:5px; background:var(--accent); transition:width .25s ease}
+.meter i.fast{background:var(--focus)} .meter i.over{background:var(--crit)}
+.meter b{position:absolute; top:-4px; bottom:-4px; width:2px; margin-left:-1px; background:var(--ink); border-radius:1px}
+.meter-cap{font-size:.78rem; color:var(--ink-2)}
+.hero-cta{align-self:flex-start; margin-top:8px; padding:11px 22px; font-size:.95rem; min-height:44px}
+
+.tiles{grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+.tile{padding:13px 14px; border-radius:12px}
+.tile .v{font-size:1.25rem}
+.card{border-radius:12px}
+.card>.hd h2{font-size:1.02rem}
+
+/* 小字下限 12px */
+.eyebrow,.tile .sub{font-size:.78rem}
+.fl,#saveState,.mnav .sub,.tx .d,.tx .m span,.tx .a small,.sch .nm span,.item .calc,.pill,
+.row .hint,.step .tx2 span,.mrow .t span,.fld>span,.mrow .c{font-size:.75rem}
+.meta{font-size:.78rem} .note{font-size:.8rem}
+
+/* 清單裡的動作要看得出能按 */
+.tx .stl{color:var(--accent-ink); font-weight:600; font-family:inherit; min-width:36px; min-height:32px; border-radius:6px}
+.tx .stl:hover{background:var(--accent-soft)}
+.tx .del{min-width:32px; min-height:32px}
+.sch .act .btn{min-height:36px; white-space:nowrap}
+.sch .nm b em{font-style:normal; font-variant-numeric:tabular-nums; margin-left:6px; color:var(--ink-2); font-weight:500}
+
+/* 各帳戶預留：收合列 */
+details.acc{border-top:1px solid var(--rule)}
+details.acc>summary{list-style:none; cursor:pointer; display:grid; grid-template-columns:1fr auto; gap:2px 12px;
+  padding:13px 17px; min-height:48px; align-items:center; transition:background .12s ease}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary:hover{background:var(--surface-2)}
+details.acc>summary:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+.acc-n{font-weight:600; font-size:.95rem; min-width:0}
+.acc-n::before{content:"›"; display:inline-block; width:14px; color:var(--ink-3); transition:transform .15s ease}
+details.acc[open] .acc-n::before{transform:rotate(90deg)}
+.acc-f{font-size:.82rem; color:var(--ink-2); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+.acc-f b{font-size:1.05rem; color:var(--accent-ink); margin-left:4px}
+.acc-f.short b{color:var(--crit)}
+.acc-s{grid-column:1/-1; font-size:.75rem; color:var(--ink-3); padding-left:14px}
+details.acc>.bd{display:flex; flex-direction:column; padding:0 17px 8px 31px}
+#rsvBody>.bd{display:flex; flex-direction:column; padding:0 17px 8px}
+
+.fld[hidden]{display:none}
+.amtbox{transition:box-shadow .12s ease}
+.amtbox:focus-within{box-shadow:0 0 0 2px var(--accent)}
+.amtbox input:focus-visible{outline:0; box-shadow:none; border-color:transparent}
+@media (min-width:721px){ .tiles{grid-template-columns:repeat(4,minmax(0,1fr))} }
+@media (max-width:720px){
+  .hero-cta{display:none}
+  nav button{font-size:.72rem}
+  nav button[data-t="entry"] svg{width:40px; height:40px; padding:9px; margin-top:-16px; border-radius:50%;
+    background:var(--accent); color:var(--on-accent); box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  nav button[data-t="entry"][aria-selected="true"]{background:none; color:var(--accent-ink)}
+  .sch .act .btn{min-height:44px}
+  .tx .stl{min-width:44px; min-height:40px}
+  .tx .del{min-width:40px; min-height:40px}
+  details.acc>.bd{padding-left:17px}
+  .sch{align-items:start} .sch .dy{padding-top:2px}
+}
 </style>
 
 <div id="gate">
@@ -502,31 +438,13 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
 
 <div class="wrap">
 <header>
-  <div class="hrow">
-    <h1 id="pageTitle">本月</h1>
-    <span class="hact">
-      <button class="btn sm ico" id="openSearch" aria-label="搜尋" title="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/></svg></button>
-      <button class="btn sm ico" id="hideAmt" hidden aria-pressed="false" aria-label="隱藏金額" title="隱藏金額"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
-      <span class="menuwrap">
-        <button class="btn sm pri" id="addAcct" hidden aria-haspopup="menu" aria-expanded="false" aria-label="新增帳戶">＋</button>
-        <div class="menu" id="addAcctMenu" role="menu" hidden>
-          <button role="menuitem" data-addacct="bank">銀行</button>
-          <button role="menuitem" data-addacct="cash">現金</button>
-          <button role="menuitem" data-addacct="sec">證券</button>
-          <button role="menuitem" data-addacct="card">信用卡</button>
-        </div>
-      </span>
-      <span id="saveState">載入中…</span>
-    </span>
-  </div>
-  <div class="mnav" id="mnav">
+  <div class="hrow"><h1>餘裕</h1><span id="saveState">載入中…</span></div>
+  <div class="mnav">
     <button class="btn nav" id="mPrev" aria-label="上個月">←</button>
-    <span class="lblwrap">
-      <span class="lbl" id="mLabel">—</span>
-      <input type="month" id="mJump" aria-label="選擇月份">
-    </span>
+    <span class="lbl" id="mLabel">—</span>
     <button class="btn nav" id="mNext" aria-label="下個月">→</button>
     <button class="btn sm" id="mToday" hidden>回到本月</button>
+    <input type="month" id="mJump">
     <span class="sub" id="mSub"></span>
   </div>
 </header>
@@ -547,36 +465,52 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <div class="bd sep"><p class="note">依序完成就能開始用。想先看看填滿的樣子，可以到「設定 → 資料」載入示範資料，之後再清空。</p></div>
   </div>
 
+  <section class="hero" id="hero" aria-labelledby="heroLbl">
+    <div class="hero-top"><span class="eyebrow" id="heroLbl">現在還能花</span>
+      <button class="btn sm" id="wfOpen">試算明細</button></div>
+    <div class="hero-v" id="heroV">—</div>
+    <p class="hero-sub" id="heroSub"></p>
+    <div class="meter" id="meter" role="img" aria-label="預算使用進度"><i id="meterFill"></i><b id="meterTick"></b></div>
+    <p class="meter-cap" id="meterCap"></p>
+    <button class="btn pri hero-cta" data-goto="entry">＋ 記一筆</button>
+  </section>
+
   <div class="tiles">
-    <div class="tile key">
-      <span class="tilehd"><span class="eyebrow" id="tLeftLbl">本月還能花</span>
-        <button class="btn sm" id="wfOpen">查看明細</button></span>
-      <span class="v" id="tLeft">—</span><span class="sub" id="tLeftSub"></span></div>
+    <div class="tile"><span class="eyebrow" id="tLeftLbl">預算剩餘</span><span class="v" id="tLeft">—</span><span class="sub" id="tLeftSub"></span></div>
+    <div class="tile" id="cashTile"><span class="eyebrow">可動用現金</span><span class="v" id="tCash">—</span><span class="sub" id="tCashSub"></span></div>
     <div class="tile"><span class="eyebrow" id="tDayLbl">每日可用</span><span class="v" id="tDay">—</span><span class="sub" id="tDaySub"></span></div>
+    <div class="tile"><span class="eyebrow">每月必要支出</span><span class="v" id="tMust">—</span><span class="sub" id="tMustSub"></span></div>
   </div>
 
+  <div class="card" id="todoCard">
+    <div class="hd"><h2>今天要處理</h2><span class="fl" id="todoFl">—</span></div>
+    <div class="bd tight" id="todoList"></div>
+  </div>
+
+  <div class="card" id="rsvCard">
+    <div class="hd"><h2>各帳戶預留</h2><span class="fl" id="rsvFl">—</span></div>
+    <div id="rsvBody"></div>
+    <div class="bd sep"><p class="note" id="rsvNote"></p></div>
+  </div>
+
+  <div class="card" id="schedCard"><div class="hd"><h2>本月固定扣款</h2><span class="fl" id="schedFl">—</span></div>
+    <div class="bd tight" id="schedList"></div>
+    <div class="bd sep"><p class="note">金額對就直接按確認；不對先改再按。確認後會產生一筆真的交易，影響帳戶餘額與卡片帳單，固定承諾的試算也會用實際金額重算。</p></div></div>
+
+  <div class="card" id="dueCard"><div class="hd"><h2 id="dueTitle">本月排程</h2><span class="fl" id="dueFl">—</span></div>
+    <div class="bd tight" id="upcoming"></div></div>
+
+  <div class="card" id="poolCard" hidden><div class="hd"><h2>應收與應付</h2><span class="fl">未結清</span></div>
+    <div class="bd tight" id="poolList"></div></div>
+
   <div class="card" id="openCard">
-    <div class="hd"><h2>當月開帳</h2><span class="fl" id="openFl">—</span></div>
+    <div class="hd"><h2>本月計畫</h2><span class="fl" id="openFl">—</span></div>
     <div class="bd">
       <div class="row"><label for="i-sal">收入預設值<span class="hint">沒有收入紀錄時才使用</span></label><input class="n" id="i-sal" inputmode="numeric"></div>
       <p class="note" id="incNote"></p>
       <button class="btn pri" id="confirmOpen" style="padding:9px">確認當月計畫</button>
     </div>
   </div>
-
-  <div class="card" id="schedCard"><div class="hd"><h2>待確認扣款</h2><span class="fl" id="schedFl">—</span></div>
-    <div class="bd tight" id="schedList"></div>
-    <div class="bd sep"><p class="note">金額對就直接按確認；不對先改再按。確認後會產生一筆真的交易，影響帳戶餘額與卡片帳單，固定承諾的試算也會用實際金額重算。</p></div></div>
-
-  <div class="card"><div class="hd"><h2 id="dueTitle">本月排程</h2><span class="fl" id="dueFl">—</span></div>
-    <div class="bd tight" id="upcoming"></div></div>
-
-  <div class="card" id="renewCard" hidden><div class="hd"><h2>年繳項目待續期</h2><span class="fl" id="renewFl">—</span></div>
-    <div class="bd tight" id="renewList"></div>
-    <div class="bd sep"><p class="note">攤提區間已經結束。按「續期」會開啟編輯面板，日期已填好下一個年度，<b>金額請自己確認</b>——每年可能不一樣，系統不會替你沿用舊價。</p></div></div>
-
-  <div class="card" id="poolCard" hidden><div class="hd"><h2>應收與應付</h2><span class="fl">未結清</span></div>
-    <div class="bd tight" id="poolList"></div></div>
 </div>
 
 <!-- 記帳 -->
@@ -585,8 +519,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
     <div class="hd"><h2>記一筆</h2><span class="fl" id="entryFl"></span></div>
     <div class="bd entry">
       <div class="dirbar" id="dirBar"></div>
-      <div class="amtbox"><span id="curSym" aria-hidden="true">＄</span><input class="n" id="e-amt" inputmode="decimal" placeholder="0" aria-label="金額"></div>
-      <label class="fld"><span>項目</span><input type="text" id="e-item" list="itemList" placeholder="買了什麼、付了什麼" autocomplete="off"><datalist id="itemList"></datalist></label>
+      <div class="amtbox"><span id="curSym">NT$</span><input class="n" id="e-amt" inputmode="decimal" placeholder="0"></div>
       <div class="fld" id="catWrap"><span>類別</span><div class="chips" id="e-cats"></div></div>
       <div class="grid2">
         <label class="fld" id="acctWrap"><span id="acctLbl">帳戶</span><select id="e-acct"></select></label>
@@ -599,7 +532,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
         <label class="fld"><span id="noteLbl">備註 / 商家</span><input type="text" id="e-note" list="noteList" placeholder="選填" autocomplete="off"><datalist id="noteList"></datalist></label>
       </div>
       <button class="btn pri" id="e-save" style="padding:10px">記錄</button>
-      <p class="note" id="e-hint" aria-live="polite"></p>
+      <p class="note" id="e-hint"></p>
     </div>
   </div>
   <div class="card"><div class="hd"><h2>當月明細</h2><span class="fl" id="txFl">—</span></div>
@@ -613,7 +546,6 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
       <span style="display:flex;gap:5px">
         <button class="btn sm" data-scope="daily" aria-pressed="true">只看日常</button>
         <button class="btn sm" data-scope="all" aria-pressed="false">全部</button>
-        <p class="note" id="statHint" aria-live="polite" hidden></p>
       </span></div>
     <div class="bd"><div class="bars" id="catBars"></div></div>
     <div class="bd tight sep" id="catDetail"></div>
@@ -634,19 +566,22 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
 
 <!-- 帳戶 -->
 <div class="panel" id="p-acct" hidden>
-  <div class="card"><div class="hd"><h2>存款與投資</h2><span class="fl" id="sumAll">—</span></div>
-    <div class="sub-hd k k-bank"><h3>銀行</h3><span class="fl" id="sumBank">—</span></div>
+  <div class="card"><div class="hd"><h2>帳戶</h2><span style="display:flex;gap:5px;flex-wrap:wrap">
+    <button class="btn sm" data-addacct="bank">＋ 銀行</button>
+    <button class="btn sm" data-addacct="cash">＋ 現金</button>
+    <button class="btn sm" data-addacct="sec">＋ 證券</button>
+  </span></div>
+    <div class="sub-hd"><h3>銀行</h3><span class="fl" id="sumBank">—</span></div>
     <div class="bd tight" id="accBank"></div>
-    <div class="sub-hd k k-cash"><h3>現金</h3><span class="fl" id="sumCash">—</span></div>
+    <div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>現金</h3><span class="fl" id="sumCash">—</span></div>
     <div class="bd tight" id="accCash"></div>
-    <div class="sub-hd k k-sec"><h3>證券</h3><span class="fl" id="sumSec">—</span></div>
+    <div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>證券</h3><span class="fl" id="sumSec">—</span></div>
     <div class="bd tight" id="accSec"></div>
   </div>
 
-  <div class="card"><div class="hd" style="padding-bottom:6px"><h2>信用卡</h2></div>
-    <div class="sub-hd k k-card"><h3>信用卡</h3><span class="fl" id="sumCard">—</span></div>
+  <div class="card"><div class="hd"><h2>信用卡</h2><span style="display:flex;gap:8px;align-items:center"><span class="fl" id="sumCard">—</span><button class="btn sm" data-addacct="card">＋ 信用卡</button></span></div>
     <div class="bd tight" id="accCard"></div>
-    <div class="bd sep"><p class="note">帳單由該期間的交易自動加總。輸入銀行帳單金額即可對帳；有差額時可一鍵補記成一筆待分類交易。</p></div></div>
+    <div class="bd sep"><p class="note">帳單由該期間的交易自動加總；輸入銀行帳單金額後，應繳金額以銀行帳單為準。按「繳款」會從繳款帳戶扣款，並把這一期標記為已繳，每一期各自記錄。</p></div></div>
 
 </div>
 
@@ -663,7 +598,7 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
         <label class="fld"><span>繳款日</span><select id="ad-due"></select></label>
       </div>
       <label class="fld" id="ad-payWrap" hidden><span>繳款帳戶</span><select id="ad-pay"></select></label>
-      <p class="note" id="ad-hint" aria-live="polite"></p>
+      <p class="note" id="ad-hint"></p>
     </div>
     <div class="sheet-ft">
       <button class="btn danger" type="button" id="ad-del" hidden>刪除</button>
@@ -684,36 +619,6 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
       <span style="flex:1"></span>
       <button class="btn" type="button" id="ed-cancel">取消</button>
       <button class="btn pri" type="button" id="ed-ok">確認</button>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="sqDlg" aria-labelledby="sqTitle">
-  <div class="sheet">
-    <div class="sheet-hd"><h2 id="sqTitle">搜尋</h2>
-      <button class="btn x" type="button" id="sq-x" aria-label="關閉">✕</button></div>
-    <div class="sheet-bd">
-      <label class="fld"><span>關鍵字</span>
-        <input type="text" id="sq-q" placeholder="項目、備註、類別、帳戶都會找" autocomplete="off"></label>
-      <p class="note" id="sq-sum" aria-live="polite">輸入關鍵字開始搜尋。</p>
-      <div class="bd tight" id="sq-list"></div>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="adtDlg" aria-labelledby="adtTitle">
-  <div class="sheet">
-    <div class="sheet-hd"><h2 id="adtTitle">帳戶明細</h2>
-      <button class="btn x" type="button" id="adt-x" aria-label="關閉">✕</button></div>
-    <div class="sheet-bd">
-      <p class="meta" id="adtSum">—</p>
-      <div class="mnav adt-nav">
-        <button class="btn nav" id="adtPrev" aria-label="上個月">←</button>
-        <span class="lbl" id="adtLabel">—</span>
-        <button class="btn nav" id="adtNext" aria-label="下個月">→</button>
-        <button class="btn sm" id="adtAll" aria-pressed="false">全部</button>
-      </div>
-      <div class="bd tight" id="adtList"></div>
     </div>
   </div>
 </dialog>
@@ -846,16 +751,16 @@ nav button svg{display:block; width:19px; height:19px; flex:none}
           <button class="btn" id="expJson">完整備份 · JSON</button>
           <button class="btn" id="expCsv">交易明細 · CSV</button>
         </div>
-        <p class="note" id="expNote" aria-live="polite">JSON 可以再匯入回來，CSV 適合丟進 Excel 看。</p>
+        <p class="note" id="expNote">JSON 可以再匯入回來，CSV 適合丟進 Excel 看。</p>
 
         <h3 style="margin-top:6px">匯入</h3>
-        <textarea id="impBox" placeholder="把備份 JSON 貼進來，再按下方按鈕" aria-label="備份 JSON 內容"></textarea>
+        <textarea id="impBox" placeholder="把備份 JSON 貼進來，再按下方按鈕"></textarea>
         <div class="btnrow">
           <button class="btn" id="impGo">從 JSON 覆蓋</button>
           <button class="btn" id="loadDemo">載入示範資料</button>
           <button class="btn danger" id="wipe">全部清空</button>
         </div>
-        <p class="note" id="impNote" aria-live="polite">匯入與清空都會覆蓋現有資料，需要按兩次確認。</p>
+        <p class="note" id="impNote">匯入與清空都會覆蓋現有資料，需要按兩次確認。</p>
       </div>
     </div>
   </div>
@@ -914,17 +819,17 @@ function demo(){
              {id:"f3",name:"電信",amount:799,day:12,acct:"c2",cat:"k9"}];
   S2.annual=[{id:"a1",name:"停車費",amount:12000,start:addMonth(m,-4),end:addMonth(m,7),
               payMonth:addMonth(m,7).slice(5),day:10,acct:"h1",cat:"k10"}];
-  S2.shared=[{id:"s1",name:"Netflix",total:500,span:1,people:2,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
+  S2.shared=[{id:"s1",name:"Netflix",total:500,myPct:50,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
   S2.transfers=[{id:"tr1",name:"轉帳存款戶",amount:5000,day:20,from:"b1",to:"h1"}];
   S2.accounts=[
     {id:"b1",name:"台新活存",type:"bank",currency:"TWD",balance:86000},
     {id:"h1",name:"皮夾現金",type:"cash",currency:"TWD",balance:3200},
     {id:"h2",name:"日幣現鈔",type:"cash",currency:"JPY",balance:18000},
     {id:"v1",name:"元大證券",type:"sec",currency:"TWD",balance:142000},
-    {id:"c1",name:"A 卡",type:"card",currency:"TWD",close:1, due:16,stmtBank:null,paid:false},
-    {id:"c2",name:"B 卡",type:"card",currency:"TWD",close:8, due:23,stmtBank:null,paid:false},
-    {id:"c3",name:"C 卡",type:"card",currency:"TWD",close:15,due:2, stmtBank:null,paid:false},
-    {id:"c4",name:"D 卡",type:"card",currency:"TWD",close:22,due:9, stmtBank:null,paid:false}];
+    {id:"c1",name:"A 卡",type:"card",currency:"TWD",close:1, due:16,payAcct:"b1",stmtAmt:{},marked:{}},
+    {id:"c2",name:"B 卡",type:"card",currency:"TWD",close:8, due:23,payAcct:"b1",stmtAmt:{},marked:{}},
+    {id:"c3",name:"C 卡",type:"card",currency:"TWD",close:15,due:2, payAcct:"b1",stmtAmt:{},marked:{}},
+    {id:"c4",name:"D 卡",type:"card",currency:"TWD",close:22,due:9, payAcct:"b1",stmtAmt:{},marked:{}}];
   S2.projects.push({id:"p1",name:"日本旅遊",kind:"oneoff",goalId:"g2",cap:0,start:addMonth(m,9)+"-01",end:addMonth(m,9)+"-10"});
   S2.goals=[{id:"g1",name:"短期目標",target:50000,months:3,saved:16667,on:true},
             {id:"g2",name:"日本旅遊",target:60000,months:10,saved:12000,on:true},
@@ -950,27 +855,8 @@ let S, dbRef=null, dlRef=null, saveTimer=null, booted=false, armed={};
 const $ = s => document.querySelector(s);
 const uid = () => "x"+Math.random().toString(36).slice(2,9);
 const n = v => { const x=parseFloat(String(v).replace(/[^\d.-]/g,"")); return isFinite(x)?x:0; };
-/* 帳戶頁的「隱藏金額」。存在 localStorage：這是「怕旁邊有人看到」的每台裝置習慣，
-   不該跟著帳號同步到別的裝置，也不需要進 Firestore。讀寫都包 try，
-   無痕視窗或封鎖儲存時會丟例外，那就當成沒隱藏。 */
-let amtHidden = (()=>{ try{ return localStorage.getItem("yuyu.hideAmt")==="1"; }catch(e){ return false; } })();
-function setAmtHidden(v){
-  amtHidden=!!v;
-  try{ localStorage.setItem("yuyu.hideAmt", amtHidden?"1":"0"); }catch(e){}
-}
-const MASK="＄ ••••";
-/* 眼睛圖示：宣告必須早於啟動時的 syncHideBtn() 呼叫，
-   否則 const 的暫時性死區會讓啟動流程整個中斷。 */
-const EYE_OPEN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 12S5.5 5.5 12 5.5 22.2 12 22.2 12 18.5 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2"/></svg>';
-const EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6.5 0 10.2 6.5 10.2 6.5a17 17 0 0 1-3.3 4.1M6.3 7.9A17 17 0 0 0 1.8 12S5.5 18.5 12 18.5a9.5 9.5 0 0 0 3.6-.7"/><path d="M9.8 9.8a3.2 3.2 0 0 0 4.4 4.4"/><path d="M3 3l18 18"/></svg>';
-const mny = (v,c) => amtHidden ? MASK : money(v,c);   // 帳戶頁專用
-const mfm = v      => amtHidden ? MASK : fmt(v);
-
-const num = v => Math.round(v).toLocaleString("en-US");          // 純數字，含千分號
-/* 呼叫端多半自己加正負號後傳正值進來（如 "−"+fmt(-v)），
-   所以負號要貼在 ＄ 左邊，兩種寫法都得到「−＄1,234」。 */
-const fmt = v => (v<0?"−＄":"＄")+num(Math.abs(v));
-const money = (v,c) => (v<0?"−":"")+(c&&c!=="TWD"?c+" ":"＄")+num(Math.abs(v));
+const fmt = v => Math.round(v).toLocaleString("en-US");
+const money = (v,c) => (v<0?"−":"")+(c&&c!=="TWD"?c+" ":"NT$")+fmt(Math.abs(v));
 const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const catOf  = id => S.cats.find(c=>c.id===id);
 const acctOf = id => S.accounts.find(a=>a.id===id);
@@ -993,36 +879,12 @@ function hitsBudget(t){
 /* ================= 排程 =================
    規則不另外建，直接從 fixed / annual / shared / transfers / goals 衍生。
    每個規則在某個月份最多產生一筆待確認項目；確認後寫入一筆帶 ruleId 的交易。 */
-/* ---------- 分攤 ----------
-   金額用「總額 + 涵蓋月數」表示（例如三個月 1500），系統攤成每月成本，
-   跟年繳攤提同一套邏輯；排程仍然是每月一筆。
-   分法改成「共幾人分」，我的比例就是 1/人數。舊資料的 myPct 在 normalize 換算過去。 */
-const sharedSpan   = s => Math.max(1, n(s.span)||1);
-const sharedPeople = s => Math.max(1, n(s.people)||1);
-const sharedMonthly= s => n(s.total)/sharedSpan(s);            // 每月總額
-const sharedMine   = s => sharedMonthly(s)/sharedPeople(s);    // 每月我的份
-const SPAN_OPTS = [{v:1,t:"每月"},{v:2,t:"每 2 個月"},{v:3,t:"每季（3 個月）"},
-                   {v:6,t:"每半年（6 個月）"},{v:12,t:"每年（12 個月）"}];
-
-function ruleDay(x){ return Math.min(31, Math.max(1, n(x.day)||1)); }
-/* 扣款日允許 1–31。遇到沒有那天的月份（4/31、平年 2/29）就往後遞延到
-   下一個真實存在的日期——JS Date 的溢位語意剛好就是這個：
-   4/31→5/1、平年 2/29→3/1、2/31→3/3。往前退會變成「提前」而不是遞延。 */
-function dateIn(m,d){
-  const [y,mm]=m.split("-").map(Number);
-  const dt=new Date(y, mm-1, Math.min(31,Math.max(1,n(d)||1)));
-  return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")
-        +"-"+String(dt.getDate()).padStart(2,"0");
-}
-const addDays = (iso,k) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+k);
-  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
-/* 排程日可能遞延到次月，所以「這條規則這個月做過了沒」不能只看交易日期的月份，
-   要認確認當下寫進去的 ruleMonth；舊資料沒有這欄，退回用日期判斷。 */
-const ruleMonthOf = t => t.ruleMonth || mk(t.date);
+function ruleDay(x){ return Math.min(28, Math.max(1, n(x.day)||1)); }
+function dateIn(m,d){ return m+"-"+String(Math.min(monthDays(m),d)).padStart(2,"0"); }
 
 function scheduleFor(m){
   const out=[];
-  const done=id=>S.txns.find(t=>t.ruleId===id&&ruleMonthOf(t)===m);
+  const done=id=>S.txns.find(t=>t.ruleId===id&&mk(t.date)===m);
 
   S.fixed.forEach(f=>out.push({
     id:f.id, kind:"fixed", name:f.name, est:n(f.amount), day:ruleDay(f),
@@ -1037,26 +899,13 @@ function scheduleFor(m){
   });
 
   S.shared.forEach(s=>out.push({
-    id:s.id, kind:"shared", name:s.name, est:Math.round(sharedMonthly(s)), day:ruleDay(s),
+    id:s.id, kind:"shared", name:s.name, est:n(s.total), day:ruleDay(s),
     acct:s.acct||"", cat:s.cat||"", dir:"out",
-    tag:"分攤 · "+sharedPeople(s)+" 人分，你的份 "+fmt(sharedMine(s))}));
+    tag:"分攤 · 你的份 "+fmt(n(s.total)*n(s.myPct)/100)}));
 
   S.transfers.forEach(t=>out.push({
     id:t.id, kind:"transfer", name:t.name, est:n(t.amount), day:ruleDay(t),
     acct:t.from||"", acct2:t.to||"", cat:"", dir:"transfer", tag:"轉帳 · 不扣額度"}));
-
-  /* 信用卡繳款：把「錢實際從銀行流出去」這件事也排進待確認。
-     方向是 transfer（銀行 → 卡片），不是 out——消費當下已經扣過日常額度了，
-     繳卡費只是還債，記成 out 會同一筆錢扣兩次。
-     只有設了繳款帳戶、且該期帳單金額 > 0 才產生。 */
-  S.accounts.filter(a=>a.type==="card"&&a.payAcct).forEach(a=>{
-    const p=stmtForMonth(a,m), amt=sumCard(a.id,p.s,p.e);
-    if(amt<=0) return;
-    out.push({id:"cardpay:"+a.id, kind:"cardpay", name:a.name+" 繳款", est:amt,
-      day:Math.min(31,Math.max(1,n(a.due)||1)),
-      acct:a.payAcct, acct2:a.id, cat:"", dir:"transfer",
-      tag:"卡費繳款 · 不扣額度　"+md(p.s)+"–"+md(p.e)});
-  });
 
   S.goals.filter(g=>g.on&&n(g.day)>0).forEach(g=>{
     const pmt=n(g.months)>0?Math.max(0,(n(g.target)-n(g.saved))/n(g.months)):0;
@@ -1070,21 +919,14 @@ function scheduleFor(m){
     o.date=dateIn(m,o.day);
     const tx=done(o.id);
     o.tx=tx||null;
-    o.state = tx ? "done" : (o.date>today ? "wait" : (today>addDays(o.date,3) ? "late" : "due"));
+    o.state = tx ? "done" : (o.date>today ? "wait" : (today>dateIn(m,Math.min(28,o.day+3)) ? "late" : "due"));
   });
   return out.sort((a,b)=>a.day-b.day);
 }
 
-/* 年繳項目到期偵測。
-   刻意不自動改寫設定——金額每年可能不同（停車費會漲），靜默續期會把錯的數字
-   帶進試算。改成列出到期項目，由使用者按一下開編輯面板、確認金額後才存。 */
-function annualDue(m){
-  return S.annual.filter(a=>a.end && a.end < m);
-}
-
 /* 已確認的排程金額（用於校正試算） */
 function actualOf(m,ruleId){
-  const t=S.txns.find(x=>x.ruleId===ruleId&&ruleMonthOf(x)===m);
+  const t=S.txns.find(x=>x.ruleId===ruleId&&mk(x.date)===m);
   return t?n(t.amount):undefined;
 }
 
@@ -1093,7 +935,7 @@ function calc(){
   const m=VM();
   const mtx=S.txns.filter(t=>mk(t.date)===m);
 
-  const loggedIn=mtx.filter(t=>t.dir==="in").reduce((a,t)=>a+n(t.amount),0);
+  const loggedIn=mtx.filter(t=>t.dir==="in"&&(acctOf(t.acct)||{}).type!=="card").reduce((a,t)=>a+n(t.amount),0);
   const I = loggedIn>0 ? loggedIn : n(S.incomeFallback);
 
   // 固定支出：已確認的實際金額取代預估
@@ -1111,10 +953,9 @@ function calc(){
   // 分攤：已確認的實際總額取代預估，我的份按比例重算
   S.shared.forEach(sh=>{
     const act=actualOf(m,sh.id);
-    const est=sharedMonthly(sh);                 // 攤提後的每月總額
-    const total=act!==undefined?act:est;
-    if(act!==undefined) corrected += (act-est)/sharedPeople(sh);
-    const mine=total/sharedPeople(sh);
+    const total=act!==undefined?act:n(sh.total);
+    if(act!==undefined) corrected += (act-n(sh.total))*n(sh.myPct)/100;
+    const mine=total*n(sh.myPct)/100;
     if(sh.dir==="split") C+=mine;
     else if(sh.dir==="iPay"){ C+=mine; advance+=total-mine; }
     else if(sh.dir==="theyPay") Sk+=mine;
@@ -1174,9 +1015,9 @@ function accruing(card){
   return {s:last,e:new Date(last.getFullYear(),last.getMonth()+1,c)};
 }
 function sumCard(id,s,e){
-  return S.txns.filter(t=>t.acct===id&&(t.dir==="out"||t.dir==="ar"))
+  return S.txns.filter(t=>t.acct===id&&(t.dir==="out"||t.dir==="ar"||t.dir==="in"))
     .filter(t=>{const d=new Date(t.date+"T00:00:00"); return d>s&&d<=e;})
-    .reduce((a,t)=>a+n(t.amount),0);
+    .reduce((a,t)=>a+(t.dir==="in"?-1:1)*n(t.amount),0);
 }
 function balanceOf(a,upTo){
   let b=n(a.balance);
@@ -1198,6 +1039,84 @@ function balanceOf(a,upTo){
   });
   return b;
 }
+/* ================= 預留機制 =================
+   每期帳單以「繳款月份」為鍵（YYYY-MM）。繳款是一筆 銀行→卡片 的轉帳，帶 stmtOf / stmtKey。
+   刷卡當下就算進預留：已結帳與累積中的帳單都從繳款帳戶的可動用金額扣掉。 */
+function day0(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+function stmtState(card,key){
+  const p=stmtForMonth(card,key), today=day0(new Date());
+  const calc=sumCard(card.id,p.s,p.e);
+  const bv=card.stmtAmt?card.stmtAmt[key]:undefined;
+  const bank=(bv===undefined||bv===null||bv==="")?null:n(bv);
+  const amount=bank!==null?bank:calc;
+  const paid=S.txns.filter(t=>t.stmtOf===card.id&&t.stmtKey===key).reduce((a,t)=>a+n(t.amount),0);
+  const marked=!!(card.marked&&card.marked[key]);
+  const remain=marked?0:Math.max(0,amount-paid);
+  const phase= today>p.e ? "closed" : (today>p.s ? "open" : "future");
+  return {key,p,calc,bank,amount,paid,marked,remain,phase,
+    done: amount>0&&remain===0, overdue: phase==="closed"&&remain>0&&p.due<today};
+}
+function cardDebt(card){
+  let d=0;
+  for(let k=-2;k<=2;k++){ const st=stmtState(card,addMonth(thisMonth(),k)); if(st.phase!=="future") d+=st.remain; }
+  return d;
+}
+function nextPayday(){
+  const t=day0(new Date()), d=Math.min(28,Math.max(1,n(S.payDay)||1));
+  let p=new Date(t.getFullYear(),t.getMonth(),d);
+  if(p<=t) p=new Date(t.getFullYear(),t.getMonth()+1,d);
+  return p;
+}
+function forecast(){
+  const today=day0(new Date()), pay=nextPayday(), m0=thisMonth(), ev=[];
+  S.accounts.filter(a=>a.type==="card").forEach(c=>{
+    for(let k=-2;k<=2;k++){
+      const st=stmtState(c,addMonth(m0,k));
+      if(st.phase==="future"||st.remain<=0) continue;
+      const late=st.p.due<today;
+      ev.push({kind:"card", card:c.id, key:st.key, acct:c.payAcct||"", to:"", amt:st.remain,
+        date:late?today:st.p.due, late, est:st.phase==="open", name:c.name+" 卡費",
+        sub:"帳單 "+md(st.p.s)+"–"+md(st.p.e)+(st.phase==="open"?" · 累積中，金額還會增加":" · 已結帳")});
+    }
+  });
+  [m0,addMonth(m0,1)].forEach(m=>scheduleFor(m).forEach(o=>{
+    if(o.state==="done"||n(o.est)<=0) return;
+    const d=new Date(o.date+"T00:00:00");
+    if(d>=pay) return;
+    const late=o.state==="late";
+    ev.push({kind:"sched", rule:o.id, acct:o.acct||"", to:o.dir==="transfer"?(o.acct2||""):"", amt:n(o.est),
+      date:d<today?today:d, late, name:o.name, sub:o.tag+" · 待確認"});
+  }));
+
+  const rows=S.accounts.filter(a=>a.type==="bank"||a.type==="cash").map(a=>{
+    const bal=balanceOf(a);
+    const items=ev.map(e=>({e, delta:(e.acct===a.id?-e.amt:0)+(e.to===a.id?e.amt:0)}))
+      .filter(x=>x.delta!==0)
+      .sort((x,y)=>(x.e.date-y.e.date)||(y.delta-x.delta));
+    let run=bal, min=bal, shortAt=bal<0?today:null;
+    items.forEach(x=>{ run+=x.delta; x.run=run; if(run<min) min=run; if(run<0&&!shortAt) shortAt=x.e.date; });
+    return {a, bal, items, free:min, need:bal-min, shortAt};
+  });
+  // 沒有帳戶可扣的項目（卡片沒指定繳款帳戶、排程沒設帳戶）
+  const loose=ev.filter(e=>!acctOf(e.acct)).sort((x,y)=>x.date-y.date);
+  const twd=rows.filter(x=>(x.a.currency||"TWD")==="TWD");
+  const looseAmt=loose.reduce((a,e)=>a+e.amt,0);
+  const totalBal=twd.reduce((a,x)=>a+x.bal,0);
+  const totalFree=twd.reduce((a,x)=>a+x.free,0)-looseAmt;
+
+  // 不足的帳戶：幾號前要補多少，可以從哪裡搬
+  const spare={}; rows.forEach(x=>{ if(x.free>0) spare[x.a.id]=x.free; });
+  const tips=rows.filter(x=>x.free<0).sort((x,y)=>x.shortAt-y.shortAt).map(x=>{
+    let need=-x.free; const from=[];
+    rows.filter(d=>spare[d.a.id]>0&&(d.a.currency||"TWD")===(x.a.currency||"TWD"))
+      .sort((p,q)=>spare[q.a.id]-spare[p.a.id])
+      .forEach(d=>{ if(need<=0) return; const take=Math.min(need,spare[d.a.id]);
+        spare[d.a.id]-=take; need-=take; from.push({a:d.a,amt:take}); });
+    return {a:x.a, amt:-x.free, by:x.shortAt, from, gap:need};
+  });
+  return {ev, rows, loose, looseAmt, totalBal, totalFree, tips, pay, today};
+}
+
 function autoProject(dateISO){
   const d=dateISO||todayISO();
   const p=S.projects.find(x=>x.kind==="oneoff"&&x.start&&x.end&&d>=x.start&&d<=x.end);
@@ -1244,18 +1163,6 @@ function paint(){
       +(x.ok?'<span></span>':'<button class="btn sm" data-goto="'+x.tab+'">前往</button>')+'</div>').join("");
   }
 
-  {
-    const due=annualDue(r.m);
-    $("#renewCard").hidden = due.length===0;
-    if(due.length){
-      $("#renewFl").textContent=due.length+" 項";
-      $("#renewList").innerHTML=due.map(a=>
-        '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b>'
-        +'<button class="btn sm pri" data-renew="'+a.id+'">續期</button></div>'
-        +'<div class="meta">上期 '+a.start+' – '+a.end+'　'+money(n(a.amount))+'</div></div>').join("");
-    }
-  }
-
   const done=!!S.confirmed[r.m];
   $("#openFl").innerHTML=done?'<span class="pill g">已確認</span>':'<span class="pill a">待確認</span>';
   $("#confirmOpen").textContent=done?"已確認 · 重新確認":"確認當月計畫";
@@ -1263,12 +1170,12 @@ function paint(){
     ? "當月已記錄收入 "+money(r.loggedIn)+"，試算以實際記錄為準。上方欄位僅在沒有收入紀錄時使用。"
     : "當月尚無收入紀錄，試算使用上方欄位。記一筆收入後會自動改用實際金額。";
 
-  $("#tLeftLbl").textContent="本月還能花";
+  $("#tLeftLbl").textContent="預算剩餘"; $("#dueCard").hidden=isNow();
   const prevLeft=$("#tLeft").textContent;
   $("#tLeft").textContent=money(r.left);
   if(prevLeft!=="—"&&prevLeft!==$("#tLeft").textContent){
     const el=$("#tLeft"); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
-  $("#tLeft").parentElement.className="tile "+(r.left<0?"warn":"key");
+  $("#tLeft").parentElement.className="tile"+(r.left<0?" warn":"");
   $("#tLeftSub").textContent="日常額度 "+money(r.dailyCap)+"　已用 "+money(r.usedDaily)
     +(r.allocated>0?"　含 "+S.projects.filter(p=>p.kind==="recurring").length+" 個信封":"");
   if(isNow()){
@@ -1320,11 +1227,11 @@ function paint(){
   // 當月繳款
   const today=new Date(), ups=[];
   S.accounts.filter(a=>a.type==="card").forEach(c=>{
-    const p=stmtForMonth(c,r.m);
+    const st=stmtState(c,r.m), p=st.p;
     const pa=c.payAcct?acctOf(c.payAcct):null;
     ups.push({d:p.due,name:c.name+" 繳款",
       sub:"帳單 "+md(p.s)+"–"+md(p.e)+(pa?"　從 "+pa.name:"　未指定繳款帳戶"),
-      amt:sumCard(c.id,p.s,p.e),paid:c.paid});
+      amt:st.amount,paid:st.done||st.marked||st.amount<=0});
   });
   ups.sort((a,b)=>a.d-b.d);
   $("#upcoming").innerHTML=ups.map(u=>{
@@ -1334,6 +1241,8 @@ function paint(){
       +(over?' style="color:var(--crit)"':u.paid?' style="opacity:.5"':'')+'>−'+fmt(u.amt)+'</span></div>';
   }).join("") || '<p class="empty">還沒有信用卡，或當月沒有繳款。</p>';
   $("#dueFl").textContent=ups.length?"合計 "+money(ups.reduce((a,u)=>a+u.amt,0)):"—";
+
+  paintReserve(r);
 
   // 應收應付
   const pc=$("#poolCard");
@@ -1349,10 +1258,10 @@ function paint(){
     });
     r.arOpen.forEach(t=>h+='<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
       +'<span class="m"><b>應收 · '+esc(t.note||"—")+'</b><span>你先墊，對方未還</span></span>'
-      +'<span class="a" style="color:var(--income)">+'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
+      +'<span class="a" style="color:var(--good)">+'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
     r.apOpen.forEach(t=>h+='<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
       +'<span class="m"><b>應付 · '+esc(t.note||"—")+'</b><span>別人先付，你未還</span></span>'
-      +'<span class="a" style="color:var(--expense)">−'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
+      +'<span class="a" style="color:var(--crit)">−'+fmt(n(t.amount))+' <button class="stl" data-settle="'+t.id+'">結清</button></span></div>');
     $("#poolList").innerHTML=h;
   } else pc.hidden=true;
 
@@ -1363,6 +1272,104 @@ function paint(){
   paintStat(r); paintAcct(r);
   $("#i-sal").value=n(S.incomeFallback);
   $("#dataFl").textContent=S.txns.length+" 筆交易 · "+S.accounts.length+" 個帳戶";
+}
+
+let rsvOpen={}, heroDaily=null;
+document.addEventListener("toggle", e=>{
+  const d=e.target; if(d&&d.dataset&&d.dataset.acc) rsvOpen[d.dataset.acc]=d.open;
+}, true);
+
+function paintReserve(r){
+  const now=isNow();
+  $("#rsvCard").hidden=!now; $("#cashTile").hidden=!now; $("#todoCard").hidden=!now;
+  $("#tMust").textContent=money(r.C+r.S);
+  $("#tMustSub").textContent="固定支出 "+money(r.C)+"　年繳攤提 "+money(r.S)+(r.G>0?"　另有儲蓄提撥 "+money(r.G):"");
+  const f=now?forecast():null;
+
+  // 主數字：預算剩餘與可動用現金取較小者
+  const hasAcct=!!f&&f.rows.length>0;
+  const spend=hasAcct?Math.min(r.left,f.totalFree):r.left;
+  const byCash=hasAcct&&f.totalFree<r.left;
+  heroDaily=now?spend/Math.max(1,r.daysLeft):null;
+  $("#heroLbl").textContent=now?"現在還能花":"當月結餘";
+  $("#heroV").textContent=money(spend);
+  $("#hero").className="hero"+(spend<0?" warn":"");
+  $("#heroSub").textContent = !now ? "該月結束後剩下的日常額度"
+    : spend<0 ? (byCash?"帳戶裡的錢不夠付已預留的款項，先處理下方的事項":"本月預算已超支 "+money(-r.left))
+    : "平均每天 "+money(heroDaily)+"　剩 "+r.daysLeft+" 天"+(byCash?"　受帳戶現金限制":"");
+  const usedPct=r.dailyCap>0?r.usedDaily/r.dailyCap*100:(r.usedDaily>0?100:0);
+  const timePct=now?(r.days-r.daysLeft)/r.days*100:100;
+  const mf=$("#meterFill");
+  mf.style.width=Math.min(100,Math.max(0,usedPct)).toFixed(1)+"%";
+  mf.className=usedPct>100?"over":(now&&usedPct>timePct+5?"fast":"");
+  $("#meterTick").hidden=!now; $("#meterTick").style.left=timePct.toFixed(1)+"%";
+  $("#meterCap").textContent="預算已用 "+usedPct.toFixed(0)+"%"
+    +(now?"　本月已過 "+timePct.toFixed(0)+"%"+(usedPct>timePct+5?"　花得比時間快":""):"");
+  if(!now) return;
+
+  $("#tCash").textContent=money(f.totalFree);
+  $("#cashTile").className="tile"+(f.totalFree<0?" warn":"");
+  $("#tCashSub").textContent="帳戶合計 "+money(f.totalBal)+"　已預留 "+money(f.totalBal-f.totalFree);
+
+  // 今天要處理：開帳、搬錢、到期扣款、七天內的卡費
+  const todo=[], DAY=86400000;
+  const when=d=>(+d<=+f.today)?"今天":md(d);
+  if(!S.confirmed[r.m]) todo.push({o:0, cls:"due", dy:"本月", name:"確認本月計畫",
+    sub:"收入 "+money(r.I)+"　日常額度 "+money(r.dailyCap),
+    act:'<button class="btn sm pri" data-confirmopen>確認</button>'});
+  f.tips.forEach(t=>{
+    t.from.forEach(x=>todo.push({o:+t.by, cls:"late", dy:when(t.by)+(+t.by>+f.today?" 前":""),
+      name:"轉 "+money(x.amt,t.a.currency)+" 到 "+t.a.name, sub:"從 "+x.a.name+" 轉出，否則 "+t.a.name+" 會不夠扣",
+      act:'<button class="btn sm" data-move="'+x.a.id+'|'+t.a.id+'|'+Math.ceil(x.amt)+'">已轉，記一筆</button>'}));
+    if(t.gap>0) todo.push({o:+t.by, cls:"late", dy:when(t.by)+(+t.by>+f.today?" 前":""),
+      name:t.a.name+" 還差 "+money(t.gap,t.a.currency), sub:"其他帳戶的可動用金額不夠補",
+      act:'<span class="pill r">不足</span>'});
+  });
+  r.sched.filter(o=>o.state==="late"||o.state==="due").forEach(o=>{
+    const a=acctOf(o.acct);
+    todo.push({o:+new Date(o.date+"T00:00:00"), cls:o.state, dy:o.state==="late"?"逾期":o.day+" 號",
+      name:o.name, amt:o.est, sub:(a?a.name:"未設帳戶")+" · "+o.tag,
+      act:'<button class="btn sm" data-ok="'+o.id+'">確認</button>'});
+  });
+  f.ev.filter(e=>e.kind==="card"&&!e.est&&(e.date-f.today)<=7*DAY).forEach(e=>{
+    const a=acctOf(e.acct);
+    todo.push({o:+e.date, cls:e.late?"late":"due", dy:e.late?"逾期":md(e.date),
+      name:e.name, amt:e.amt, sub:(a?"從 "+a.name:"未指定繳款帳戶")+" · "+e.sub,
+      act:'<button class="btn sm pri" data-paycard="'+e.card+':'+e.key+'">繳款</button>'});
+  });
+  todo.sort((x,y)=>x.o-y.o);
+  $("#todoFl").textContent=todo.length?todo.length+" 件":"都處理完了";
+  $("#todoList").innerHTML=todo.map(t=>
+    '<div class="sch '+t.cls+'"><span class="dy">'+t.dy+'</span>'
+    +'<span class="nm"><b>'+esc(t.name)+(t.amt!==undefined?'<em>'+fmt(t.amt)+'</em>':'')+'</b><span>'+esc(t.sub)+'</span></span>'
+    +'<span class="act">'+t.act+'</span></div>').join("")
+    ||'<p class="empty">今天沒有要處理的事。</p>';
+
+  // 各帳戶預留
+  const row=(e,delta,run)=>
+    '<div class="tx"><span class="d"'+(e.late?' style="color:var(--crit)"':'')+'>'+(e.late?"逾期":md(e.date))+'</span>'
+    +'<span class="m"><b>'+esc(e.name)+'</b><span>'+esc(e.sub)+'</span></span>'
+    +'<span class="a"'+(run!==null&&run<0?' style="color:var(--crit)"':'')+'>'+(delta<0?"−":"+")+fmt(Math.abs(delta))
+    +(e.kind==="card"?' <button class="stl" data-paycard="'+e.card+':'+e.key+'">繳款</button>':'')
+    +(run===null?'':'<small>'+(run<0?"不足 "+fmt(-run):"扣後餘 "+fmt(run))+'</small>')+'</span></div>';
+  let h="";
+  f.rows.forEach(x=>{
+    const open=rsvOpen[x.a.id]!==undefined?rsvOpen[x.a.id]:x.free<0;
+    h+='<details class="acc" data-acc="'+x.a.id+'"'+(open?" open":"")+'><summary>'
+      +'<span class="acc-n">'+esc(x.a.name)+'</span>'
+      +(x.free<0?'<span class="acc-f short">不足<b>'+fmt(-x.free)+'</b></span>'
+                :'<span class="acc-f">可動用<b>'+fmt(x.free)+'</b></span>')
+      +'<span class="acc-s">餘額 '+money(x.bal,x.a.currency)+'　需預留 '+fmt(x.need)+'　'+x.items.length+' 筆待扣</span></summary>'
+      +'<div class="bd tight">'+(x.items.map(it=>row(it.e,it.delta,it.run)).join("")||'<p class="empty">沒有待扣的款項。</p>')+'</div></details>';
+  });
+  if(f.loose.length){
+    h+='<div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>未指定帳戶</h3>'
+      +'<span class="fl" style="color:var(--focus)">'+fmt(f.looseAmt)+'　請指定繳款或扣款帳戶</span></div>'
+      +'<div class="bd tight">'+f.loose.map(e=>row(e,-e.amt,null)).join("")+'</div>';
+  }
+  $("#rsvFl").textContent=f.ev.length?"合計預留 "+money(f.totalBal-f.totalFree):"—";
+  $("#rsvBody").innerHTML=h||'<div class="bd tight"><p class="empty">還沒有銀行或現金帳戶。到帳戶頁新增後，這裡會列出每個帳戶要留多少。</p></div>';
+  $("#rsvNote").textContent="刷卡當下就算進預留：已結帳與累積中的卡費全部列入；固定支出、年繳、提撥與固定轉帳列到下次發薪日（"+md(f.pay)+"）前。尚未入帳的收入不計入。";
 }
 
 function txRow(t){
@@ -1380,33 +1387,18 @@ function txRow(t){
   else { tag=[c?c.name:"未分類",a?a.name:"—"]
     .concat(p&&p.id!=="p0"?[p.name]:[]).join(" · "); }
   return '<div class="tx"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
-    +'<span class="m"><b>'+esc(t.item||t.note||(DIRALL[t.dir]||{label:"交易"}).label)+'</b><span>'
-      +esc(tag+(t.item&&t.note?" · "+t.note:""))+'</span></span>'
+    +'<span class="m"><b>'+esc(t.note||(DIRALL[t.dir]||{label:"交易"}).label)+'</b><span>'+esc(tag)+'</span></span>'
     +'<span class="a'+cls+'">'+sign+fmt(n(t.amount))
     +' <button class="del" data-deltx="'+t.id+'" aria-label="刪除">✕</button></span></div>';
 }
 
 function paintStat(r){
   const scope=S.ui.scope||"daily";
-  // 按鈕的 aria-pressed 原本寫死在 HTML，重新載入後會跟實際狀態對不上
-  document.querySelectorAll("[data-scope]").forEach(b=>
-    b.setAttribute("aria-pressed", String(b.dataset.scope===scope)));
   const pool=r.mtx.filter(t=>hitsBudget(t)&&(scope==="daily"?t.proj==="p0":true));
   const by={}; pool.forEach(t=>{ const k=t.cat||"_"; by[k]=(by[k]||0)+n(t.amount); });
   const total=Object.values(by).reduce((a,b)=>a+b,0);
   const arr=Object.entries(by).map(([k,v])=>({k,name:(catOf(k)||{name:"未分類"}).name,v})).sort((a,b)=>b.v-a.v);
   const max=arr.length?arr[0].v:1;
-  /* 預設只看日常，指定了專案的交易會被濾掉。以前畫面完全不提，
-     使用者會以為「記了但沒統計到」。這裡把被藏起來的筆數講出來。 */
-  const hidden = scope==="daily"
-    ? r.mtx.filter(t=>hitsBudget(t)&&t.proj!=="p0")
-    : [];
-  $("#statHint").innerHTML = hidden.length
-    ? '另有 <b>'+hidden.length+'</b> 筆記在專案裡（'+money(hidden.reduce((a,t)=>a+n(t.amount),0))
-      +'），沒算進這裡。切到「全部」可以看到。'
-    : "";
-  $("#statHint").hidden = hidden.length===0;
-
   $("#catBars").innerHTML=arr.map((c,i)=>
     '<div class="bar"><span class="lb">'+esc(c.name)+'</span>'
     +'<span class="tr"><i style="width:'+(c.v/max*100).toFixed(1)+'%;background:'+CPAL[i%8]+'"></i></span>'
@@ -1475,55 +1467,54 @@ function paintStat(r){
     +'<span class="vv">'+fmt(x.v)+'</span></div>').join("");
 }
 
-/* 帳戶頁不跟著「本月」的檢視月份走——這一頁沒有月份切換，永遠顯示當下的餘額；
-   要看某個月的明細，點進該帳戶的明細面板，月份切換在那裡。 */
 function paintAcct(r){
   const grp=(type,el,sumEl)=>{
     const list=S.accounts.filter(a=>a.type===type);
-    $(el).innerHTML=list.map(a=>
-      '<div class="blk tap" data-acctdtl="'+a.id+'" role="button" tabindex="0">'
-        +'<div class="top"><b>'+esc(a.name)+'</b>'
+    $(el).innerHTML=list.map(a=>{
+      const bal=balanceOf(a,isNow()?null:r.m);
+      const mv=S.txns.filter(t=>(t.acct===a.id||t.acct2===a.id)&&mk(t.date)===r.m).sort((x,y)=>x.date<y.date?1:-1);
+      return '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b>'
         +'<span style="display:flex;gap:6px;align-items:center">'
         +'<span class="pill'+(a.currency!=="TWD"?" a":"")+'">'+esc(a.currency||"TWD")+'</span>'
         +'<button class="btn sm" data-editacct="'+a.id+'">編輯</button></span></div>'
-        +'<div class="meta">餘額 <b>'+mny(balanceOf(a,null),a.currency)+'</b></div></div>'
-    ).join("")||'<p class="empty">還沒有'+ATYPE[type]+'帳戶。</p>';
-    if(sumEl){ const bc={}; list.forEach(a=>{ const c=a.currency||"TWD"; bc[c]=(bc[c]||0)+balanceOf(a,null); });
-      $(sumEl).textContent = amtHidden ? MASK
-        : (Object.entries(bc).map(([c,v])=>money(v,c)).join("　")||"—"); }
+        +'<div class="meta">'+(isNow()?"餘額":"月底餘額")+' <b>'+money(bal,a.currency)+'</b>　當月 '+mv.length+' 筆</div>'
+        +(mv.length?'<div class="dtl">'+mv.slice(0,5).map(txRow).join("")
+          +(mv.length>5?'<p class="meta">…共 '+mv.length+' 筆</p>':'')+'</div>':'')+'</div>';
+    }).join("")||'<p class="empty">還沒有'+ATYPE[type]+'帳戶。</p>';
+    if(sumEl){ const bc={}; list.forEach(a=>{ const c=a.currency||"TWD"; bc[c]=(bc[c]||0)+balanceOf(a,isNow()?null:r.m); });
+      $(sumEl).textContent=Object.entries(bc).map(([c,v])=>money(v,c)).join("　")||"—"; }
   };
   grp("bank","#accBank","#sumBank"); grp("cash","#accCash","#sumCash"); grp("sec","#accSec","#sumSec");
-  { // 三類合計（只加總 TWD，外幣不混著加）
-    const twd=S.accounts.filter(a=>["bank","cash","sec"].includes(a.type)&&(a.currency||"TWD")==="TWD")
-      .reduce((s,a)=>s+balanceOf(a,null),0);
-    $("#sumAll").textContent = amtHidden ? MASK : money(twd);
-  }
 
-  const today=new Date(); let tot=0;
-  const CM=thisMonth();                      // 這一頁固定看當月，不跟檢視月份走
+  let tot=0;
   $("#accCard").innerHTML=S.accounts.filter(a=>a.type==="card").map(a=>{
-    const p=stmtForMonth(a,CM), closed=sumCard(a.id,p.s,p.e);
-    const ac=accruing(a), accru=ac?sumCard(a.id,ac.s,ac.e):0;
-    tot+=closed+accru;
-    const bank=(a.stmtBank===null||a.stmtBank===""||a.stmtBank===undefined)?null:n(a.stmtBank);
-    const diff=bank===null?null:bank-closed;
-    const over=p.due<today&&!a.paid;
-    let st='<span class="pill">未對帳</span>';
-    if(bank!==null) st=diff===0?'<span class="pill g">已對帳</span>':'<span class="pill r">差額 '+mfm(Math.abs(diff))+'</span>';
-    return '<div class="blk tap" data-acctdtl="'+a.id+'" role="button" tabindex="0">'
-      +'<div class="top"><b>'+esc(a.name)+'</b><span style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">'
-      +st+(a.paid?'<span class="pill g">已繳款</span>':over?'<span class="pill r">逾期</span>':'<span class="pill a">'+md(p.due)+' 應繳</span>')
-      +'<button class="btn sm" data-editacct="'+a.id+'">編輯</button></span></div>'
-      +'<div class="meta">應繳帳單 <b>'+mfm(closed)+'</b>　'+md(p.s)+'–'+md(p.e)+'　繳款 '+md(p.due)
-      +(a.payAcct&&acctOf(a.payAcct)?'　從 '+esc(acctOf(a.payAcct).name):'')
-      +(ac?'<br>當期累積 <b>'+mfm(accru)+'</b>　'+md(ac.s)+'–'+md(ac.e)+'（尚未結帳）':'')+'</div>'
+    const st=stmtState(a,r.m), p=st.p;
+    const ac=isNow()?accruing(a):null, showAc=ac&&(+ac.e!==+p.e), accru=showAc?sumCard(a.id,ac.s,ac.e):0;
+    tot+=cardDebt(a);
+    const diff=st.bank===null?null:st.bank-st.calc;
+    let rec='<span class="pill">未對帳</span>';
+    if(st.bank!==null) rec=diff===0?'<span class="pill g">已對帳</span>':'<span class="pill r">差額 '+fmt(Math.abs(diff))+'</span>';
+    const pay = st.amount<=0 ? '<span class="pill">無應繳</span>'
+      : (st.done||st.marked) ? '<span class="pill g">已繳款</span>'
+      : (st.overdue&&isNow()) ? '<span class="pill r">逾期</span>'
+      : '<span class="pill a">'+md(p.due)+' 應繳</span>';
+    const key=a.id+':'+st.key;
+    const rows=S.txns.filter(t=>(t.acct===a.id||t.acct2===a.id)&&mk(t.date)===r.m).sort((x,y)=>x.date<y.date?1:-1);
+    return '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b><span style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">'
+      +rec+pay+'<button class="btn sm" data-editacct="'+a.id+'">編輯</button></span></div>'
+      +'<div class="meta">應繳帳單 <b>'+fmt(st.amount)+'</b>　'+md(p.s)+'–'+md(p.e)+'　繳款 '+md(p.due)
+      +(a.payAcct&&acctOf(a.payAcct)?'　從 '+esc(acctOf(a.payAcct).name):'　<span style="color:var(--focus)">未指定繳款帳戶</span>')
+      +(st.paid>0&&st.remain>0?'<br>已繳 <b>'+fmt(st.paid)+'</b>　尚欠 <b style="color:var(--crit)">'+fmt(st.remain)+'</b>':'')
+      +(showAc?'<br>當期累積 <b>'+fmt(accru)+'</b>　'+md(ac.s)+'–'+md(ac.e)+'（尚未結帳，已列入預留）':'')+'</div>'
       +'<div class="fields" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px">'
-      +'<span class="fl">銀行帳單</span><input class="n" style="width:104px" data-k="accounts.stmtBank" data-id="'+a.id+'" value="'+(bank===null?"":bank)+'" inputmode="numeric" placeholder="輸入核對">'
-      +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額 '+mfm(diff)+'</button>':'')
-      +'<label class="sw"><input type="checkbox" data-k="accounts.paid" data-id="'+a.id+'"'+(a.paid?" checked":"")+'>已繳款</label></div>'
-      +'</div>';
+      +'<span class="fl">銀行帳單</span><input class="n" style="width:104px" data-stmt="'+a.id+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
+      +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額 '+fmt(diff)+'</button>':'')
+      +(st.remain>0?'<button class="btn sm pri" data-paycard="'+key+'">繳款 '+fmt(st.remain)+'</button>':'')
+      +(st.marked?'<button class="btn sm" data-unmark="'+key+'">取消已繳標記</button>':'')+'</div>'
+      +(rows.length?'<div class="dtl">'+rows.slice(0,5).map(txRow).join("")
+        +(rows.length>5?'<p class="meta">…共 '+rows.length+' 筆</p>':'')+'</div>':'')+'</div>';
   }).join("")||'<p class="empty">還沒有信用卡。</p>';
-  $("#sumCard").textContent="未繳合計 "+(amtHidden?MASK:money(tot));
+  $("#sumCard").textContent="未繳合計 "+money(tot);
 
 }
 
@@ -1557,12 +1548,10 @@ function buildEntry(){
   const c=catOf(u.cat);
   $("#goalWrap").hidden = !(d==="out" && S.goals.length>0);
   const a=acctOf(u.acct);
-  $("#curSym").textContent=(a&&a.currency&&a.currency!=="TWD")?a.currency:"＄";
+  $("#curSym").textContent=(a&&a.currency&&a.currency!=="TWD")?a.currency:"NT$";
   if(!$("#e-date").value) $("#e-date").value=defaultDate();
   const seen=[...new Set(S.txns.map(t=>t.note).filter(Boolean))].reverse().slice(0,60);
   $("#noteList").innerHTML=seen.map(x=>'<option value="'+esc(x)+'"></option>').join("");
-  const seenItem=[...new Set(S.txns.map(t=>t.item).filter(Boolean))].reverse().slice(0,60);
-  $("#itemList").innerHTML=seenItem.map(x=>'<option value="'+esc(x)+'"></option>').join("");
   entryHint();
 }
 function entryHint(){
@@ -1629,17 +1618,12 @@ function renderAll(){ buildEntry(); buildLists(); paint(); }
 
 /* ================= 提示與帳戶對話框 ================= */
 let toastT=null;
-let delArm=null;   // 交易刪除的兩段式確認：{id, t}
 function toast(msg){
   const el=$("#toast"); el.textContent=msg; el.classList.add("on");
   clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2000);
 }
 function dayOpts(sel){
-  let o="";
-  for(let i=1;i<=31;i++){
-    const note = i>=29 ? "（短月遞延）" : "";
-    o+='<option value="'+i+'"'+(n(sel)===i?" selected":"")+'>'+i+' 號'+note+'</option>';
-  }
+  let o=""; for(let i=1;i<=28;i++) o+='<option value="'+i+'"'+(n(sel)===i?" selected":"")+'>'+i+' 號</option>';
   return o;
 }
 let adType="bank", adId=null;
@@ -1682,7 +1666,6 @@ const EDITORS={
     blank:()=>({id:uid(),name:"",amount:0,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：房租"},
             {k:"amount",label:"每月金額",type:"num"},
-            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
@@ -1697,7 +1680,6 @@ const EDITORS={
             {k:"start",label:"攤提起",type:"month"},
             {k:"end",label:"攤提迄",type:"month"},
             {k:"payMonth",label:"付款月份",type:"select",opts:()=>Array.from({length:12},(_,i)=>({v:String(i+1).padStart(2,"0"),t:(i+1)+" 月"}))},
-            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"付款日",type:"day"},
             {k:"acct",label:"付款帳戶",type:"acct"}],
 
@@ -1718,24 +1700,19 @@ const EDITORS={
 
   shared:{ title:"分攤項目", listEmpty:"還沒有分攤項目。跟別人平分的訂閱費放這裡。",
     hint:"三種方向的成本都是「你的份」，差別只在現金何時流動。我付全額時，墊出去的差額會進應收池。",
-    blank:()=>({id:uid(),name:"",total:0,span:1,people:2,dir:"split",every:6,day:1,acct:"",cat:""}),
+    blank:()=>({id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：Netflix"},
-            {k:"total",label:"金額",type:"num"},
-            {k:"span",label:"金額單位",type:"select",rerender:true,
-             opts:()=>SPAN_OPTS.map(o=>({v:o.v,t:o.t}))},
-            {k:"people",label:"共幾人分攤",type:"num"},
+            {k:"total",label:"每月總額",type:"num"},
+            {k:"myPct",label:"我佔 %",type:"num"},
             {k:"dir",label:"付款方式",type:"select",rerender:true,
              opts:()=>Object.keys(DIRNAME).map(k=>({v:k,t:DIRNAME[k]}))},
             {k:"every",label:"每幾個月結算",type:"num",when:o=>o.dir!=="split"},
-            {k:"cat",label:"類別",type:"cat"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
-    sum:o=>{const sp=sharedSpan(o), per=sharedMonthly(o), mine=sharedMine(o), ppl=sharedPeople(o);
-      return DIRNAME[o.dir]
-        +"　"+money(n(o.total))+(sp>1?"／"+sp+" 個月，攤成 "+money(per)+"／月":"／月")
-        +"　"+ppl+" 人分　你的成本 <b>"+money(mine)+"／月</b>"
-        +(o.dir==="iPay"?"<br>每月墊 "+money(per-mine)+"，每 "+n(o.every)+" 個月收回 "+money((per-mine)*n(o.every))
+    sum:o=>{const total=n(o.total),mine=total*n(o.myPct)/100;
+      return DIRNAME[o.dir]+"　總額 "+money(total)+"　你的成本 <b>"+money(mine)+"／月</b>"
+        +(o.dir==="iPay"?"<br>每月墊 "+money(total-mine)+"，每 "+n(o.every)+" 個月收回 "+money((total-mine)*n(o.every))
          :o.dir==="theyPay"?"<br>每 "+n(o.every)+" 個月付出 "+money(mine*n(o.every)):"");} },
 
   cats:{ title:"類別", listEmpty:"還沒有類別。",
@@ -1752,7 +1729,7 @@ hint:"類別只用於分類統計。要不要從額度扣，是看這筆的來�
     fields:[{k:"name",label:"專案名稱",type:"text",ph:"例如：日本旅遊"},
             {k:"goalId",label:"資金來源",type:"select",rerender:true,when:o=>o.kind==="oneoff",
              opts:()=>[{v:"",t:"不綁目標（手動上限）"}].concat(S.goals.map(g=>({v:g.id,t:"綁定「"+g.name+"」"})))},
-            {k:"cap",label:"專案上限",type:"num",
+            {k:"cap",label:"每月上限",type:"num",
              when:o=>(o.kind==="recurring"&&o.id!=="p0")||(o.kind==="oneoff"&&!o.goalId)},
             {k:"start",label:"起始日",type:"date",when:o=>o.kind==="oneoff"},
             {k:"end",label:"結束日",type:"date",when:o=>o.kind==="oneoff"}],
@@ -1846,78 +1823,11 @@ function saveEditor(){
   buildEntry(); buildLists(); paint(); save();
 }
 
-/* ================= 全站搜尋 =================
-   比對項目、備註、類別名稱、帳戶名稱與金額。不分大小寫，
-   多個關鍵字用空白隔開時要全部命中（AND），比單一字串好用。 */
-function searchTxns(q){
-  const keys=q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if(!keys.length) return [];
-  return S.txns.filter(t=>{
-    const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj);
-    const hay=[t.item, t.note, c&&c.name, a&&a.name, a2&&a2.name, p&&p.name,
-               t.date, String(n(t.amount))].filter(Boolean).join(" ").toLowerCase();
-    return keys.every(k=>hay.includes(k));
-  }).sort((x,y)=>x.date<y.date?1:-1);
-}
-function renderSearch(){
-  const q=$("#sq-q").value;
-  const rows=searchTxns(q);
-  if(!q.trim()){
-    $("#sq-sum").textContent="輸入關鍵字開始搜尋。";
-    $("#sq-list").innerHTML=""; return;
-  }
-  const sum=rows.reduce((s,t)=>s+n(t.amount),0);
-  $("#sq-sum").innerHTML = rows.length
-    ? "找到 <b>"+rows.length+"</b> 筆　合計 <b>"+money(sum)+"</b>"
-    : "找不到符合的紀錄。";
-  $("#sq-list").innerHTML = rows.slice(0,200).map(txRow).join("")
-    + (rows.length>200?'<p class="meta">只顯示前 200 筆，請再加關鍵字縮小範圍。</p>':"");
-}
-
-/* ================= 帳戶明細面板 =================
-   帳戶頁本身沒有月份切換，要看哪個月的明細在這裡選；「全部」列出該帳戶完整歷史。
-   adtMonth 只活在這個面板，不寫進 S.ui，關掉就忘記——它不是全域的檢視狀態。 */
-let adtId=null, adtMonth=null, adtAll=false;
-
-function acctTxns(id){
-  return S.txns.filter(t=>t.acct===id||t.acct2===id).sort((x,y)=>x.date<y.date?1:-1);
-}
-function openAcctDtl(id){
-  const a=acctOf(id); if(!a) return;
-  adtId=id; adtMonth=thisMonth(); adtAll=false;
-  renderAcctDtl();
-  $("#adtDlg").showModal();
-}
-function renderAcctDtl(){
-  const a=acctOf(adtId); if(!a) return;
-  const all=acctTxns(adtId);
-  $("#adtTitle").textContent=a.name+"　"+ATYPE[a.type];
-  $("#adtSum").innerHTML = a.type==="card"
-    ? "全部 "+all.length+" 筆"
-    : "目前餘額 <b>"+mny(balanceOf(a,null),a.currency)+"</b>　全部 "+all.length+" 筆";
-
-  $("#adtLabel").textContent = adtAll ? "全部" : adtMonth.replace("-","/");
-  $("#adtAll").setAttribute("aria-pressed",String(adtAll));
-  $("#adtPrev").disabled=adtAll; $("#adtNext").disabled=adtAll;
-
-  const rows = adtAll ? all : all.filter(t=>mk(t.date)===adtMonth);
-  const sub = rows.reduce((s,t)=>{
-    if(t.acct2===adtId) return s+n(t.amount);
-    if(t.dir==="in") return s+n(t.amount);
-    if(t.dir==="transfer"||t.dir==="out"||t.dir==="ap") return s-n(t.amount);
-    return s;
-  },0);
-  $("#adtList").innerHTML = rows.length
-    ? rows.map(txRow).join("")+'<p class="meta" style="padding-top:8px">'
-      +rows.length+' 筆　淨額 <b>'+mny(sub,a.currency)+'</b></p>'
-    : '<p class="empty">'+(adtAll?"這個帳戶還沒有任何交易。":"這個月沒有交易。")+'</p>';
-}
-
 /* ================= 結清面板 ================= */
 let stMode=null, stRef=null;   // stMode: "tx" 單筆應收應付 ｜ "shared" 分攤墊款
 function monthsSince(from,to){ return (!from) ? 0 : Math.max(0, monthsBetween(from,to)-1); }
 function sharedAccrued(sh){
-  const total=sharedMonthly(sh), mine=sharedMine(sh);
+  const total=n(sh.total), mine=total*n(sh.myPct)/100;
   const per = sh.dir==="iPay" ? total-mine : sh.dir==="theyPay" ? mine : 0;
   const ms = monthsSince(sh.lastSettled||"", VM());
   return {per, months:ms, amount:per*ms};
@@ -1925,7 +1835,7 @@ function sharedAccrued(sh){
 function openSettle(mode,id){
   stMode=mode; stRef=id;
   const banks=S.accounts.filter(a=>a.type!=="card");
-  let amt=0, title="結清", lbl="收款帳戶", hint="";
+  let amt=0, title="結清", lbl="收款帳戶", hint="", pre="";
   if(mode==="tx"){
     const t=S.txns.find(x=>x.id===id); if(!t) return;
     amt=n(t.amount);
@@ -1935,6 +1845,11 @@ function openSettle(mode,id){
     hint  = isAR
       ? "當初是從「"+((acctOf(t.acct)||{}).name||"？")+"」墊出去的，收回時可以進不同帳戶。這筆是沖銷，不算收入。"
       : "別人先幫你付的，現在還他。這筆是沖銷，不算支出（消費當下已經扣過額度）。";
+  } else if(mode==="card"){
+    const [cid,key]=id.split(":"), c=acctOf(cid); if(!c) return;
+    const st=stmtState(c,key);
+    amt=Math.round(st.remain); title=c.name+" 繳款"; lbl="付款帳戶"; pre=c.payAcct||"";
+    hint="帳單 "+md(st.p.s)+"–"+md(st.p.e)+"，繳款日 "+md(st.p.due)+"。確認後從付款帳戶扣款，這一期標記為已繳。這筆不扣額度（刷卡當下已經扣過）。";
   } else {
     const sh=S.shared.find(x=>x.id===id); if(!sh) return;
     const a=sharedAccrued(sh);
@@ -1949,6 +1864,7 @@ function openSettle(mode,id){
   $("#st-amt").value=amt;
   $("#st-acct").innerHTML=banks.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join("")
     ||'<option value="">尚無帳戶</option>';
+  if(pre&&banks.some(a=>a.id===pre)) $("#st-acct").value=pre;
   $("#st-date").value=todayISO();
   $("#st-hint").textContent=hint;
   $("#stDlg").showModal();
@@ -1963,6 +1879,11 @@ function doSettle(){
     S.txns.push({id:uid(), date, amount:amt, dir:"settle", acct, cat:"", proj:"p0",
       settleOf:t.id, note:(t.dir==="ar"?"收回 · ":"還款 · ")+(t.note||"")});
     toast((t.dir==="ar"?"已收回 ":"已還款 ")+money(amt));
+  } else if(stMode==="card"){
+    const [cid,key]=stRef.split(":"), c=acctOf(cid); if(!c) return;
+    S.txns.push({id:uid(), date, amount:amt, dir:"transfer", acct, acct2:c.id, cat:"", proj:"p0",
+      stmtOf:c.id, stmtKey:key, note:c.name+" 繳款 "+key.replace("-","/")});
+    toast("已繳 "+c.name+"　"+money(amt));
   } else {
     const sh=S.shared.find(x=>x.id===stRef); if(!sh) return;
     S.txns.push({id:uid(), date, amount:amt, dir:"settle", acct, cat:"", proj:"p0",
@@ -1984,7 +1905,7 @@ function saveAcct(){
     close:n($("#ad-close").value), due:n($("#ad-due").value),
     payAcct:isCard?$("#ad-pay").value:""};
   if(adId){ Object.assign(acctOf(adId),data); toast("已更新"); }
-  else { S.accounts.push(Object.assign({id:uid(),type:adType,stmtBank:null,paid:false},data)); toast("新增成功"); }
+  else { S.accounts.push(Object.assign({id:uid(),type:adType,stmtAmt:{},marked:{}},data)); toast("新增成功"); }
   $("#acctDlg").close();
   buildEntry(); buildLists(); paint(); save();
 }
@@ -1992,10 +1913,10 @@ function saveAcct(){
 /* ================= 匯出匯入 ================= */
 function csvCell(v){ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
 function buildCSV(){
-  const head=["日期","方向","金額","項目","類別","收支","帳戶","轉入帳戶","專案","目標","備註","已結清"];
+  const head=["日期","方向","金額","類別","收支","帳戶","轉入帳戶","專案","目標","備註","已結清"];
   const rows=S.txns.slice().sort((a,b)=>a.date<b.date?-1:1).map(t=>{
     const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj), g=goalOf(t.goal);
-    return [t.date,(DIRALL[t.dir]||{label:t.dir}).label,n(t.amount),t.item||"",c?c.name:"",c?c.kind:"",
+    return [t.date,(DIRALL[t.dir]||{label:t.dir}).label,n(t.amount),c?c.name:"",c?c.kind:"",
       a?a.name:"",a2?a2.name:"",p?p.name:"",g?g.name:"",t.note||"",
       (t.dir==="ar"||t.dir==="ap")?(t.settled?"是":"否"):""].map(csvCell).join(",");
   });
@@ -2056,6 +1977,12 @@ document.addEventListener("change", e=>{
     if(f&&f.rerender){ collectDraft(); renderEdBody(); }
     return;
   }
+  if(t.dataset&&t.dataset.stmt){
+    const c=acctOf(t.dataset.stmt);
+    if(c){ if(!c.stmtAmt) c.stmtAmt={};
+      if(t.value==="") delete c.stmtAmt[VM()]; else c.stmtAmt[VM()]=n(t.value);
+      paint(); save(); }
+    return; }
   if(t.id==="i-theme"){ S.theme=t.value; applyTheme(); save(); toast("主題已切換"); return; }
   if(t.id==="i-home"){ S.homeTab=t.value; save(); toast("預設頁面已更新"); return; }
   if(t.id==="e-acct"){ S.ui.acct=t.value; buildEntry(); save(); }
@@ -2064,20 +1991,8 @@ document.addEventListener("change", e=>{
   if(t.id==="e-goal"){ S.ui.goal=t.value; save(); }
 });
 
-/* 點擊目標正規化。
-   分頁按鈕裡的圖示是 <svg>，而 SVG 元素是 SVGElement、**不是** HTMLElement——
-   舊寫法 `if(!(t instanceof HTMLElement)) return;` 會把點在圖示上的事件整個擋掉，
-   症狀就是「點了分頁沒反應，要點好幾次」。這裡先往上找到最近的 HTML 元素。 */
-function evTarget(e){
-  const raw=e.target;
-  if(!(raw instanceof Element)) return null;
-  if(raw instanceof HTMLElement) return raw;
-  const up=raw.closest("button,a,label,div,span,li,td,th");
-  return up instanceof HTMLElement ? up : (raw.parentElement||null);
-}
-
 document.addEventListener("click", async e=>{
-  const t=evTarget(e); if(!t) return;
+  const t=e.target; if(!(t instanceof HTMLElement)) return;
   const tab=t.closest("nav button"); if(tab){ goTab(tab.dataset.t); return; }
   const gt=t.closest("[data-goto]"); if(gt){ goTab(gt.dataset.goto); return; }
 
@@ -2126,7 +2041,15 @@ document.addEventListener("click", async e=>{
     document.querySelectorAll("[data-scope]").forEach(b=>b.setAttribute("aria-pressed",String(b===sc)));
     paint(); save(); return; }
 
-  if(t.id==="confirmOpen"){ S.confirmed[VM()]=true; paint(); save(); toast("本月計畫已確認"); return; }
+  const mvf=t.closest("[data-move]");
+  if(mvf){
+    const [from,to,amt]=mvf.dataset.move.split("|"), a=acctOf(from), b=acctOf(to);
+    if(a&&b&&n(amt)>0){
+      S.txns.push({id:uid(), date:todayISO(), amount:n(amt), dir:"transfer", acct:from, acct2:to, cat:"", proj:"p0", note:"預留搬移"});
+      renderAll(); save(); toast("已記錄 "+a.name+" → "+b.name+"　"+money(n(amt)));
+    } return;
+  }
+  if(t.id==="confirmOpen"||t.closest("[data-confirmopen]")){ S.confirmed[VM()]=true; paint(); save(); toast("本月計畫已確認"); return; }
 
   if(t.id==="e-save"){
     if(!S.accounts.length){ $("#e-hint").textContent="請先到帳戶頁新增一個帳戶。"; return; }
@@ -2138,15 +2061,15 @@ document.addEventListener("click", async e=>{
     const tx={id:uid(), date:$("#e-date").value||defaultDate(), amount:amt, dir:d,
       acct:(d==="ap"?"":S.ui.acct), acct2:(d==="transfer"?S.ui.acct2:""),
       cat:(d==="transfer"?"":S.ui.cat), proj:((d==="out"||d==="ap")?S.ui.proj:"p0"),
-      item:$("#e-item").value.trim(), note:$("#e-note").value.trim()};
+      note:$("#e-note").value.trim()};
     if(d==="ar"||d==="ap") tx.settled=false;
     const c=catOf(S.ui.cat);
     if(d==="out"&&S.ui.goal){ tx.goal=S.ui.goal; const g=goalOf(S.ui.goal); if(g) g.saved=n(g.saved)+amt; }
     S.txns.push(tx);
-    $("#e-amt").value=""; $("#e-item").value=""; $("#e-note").value="";
+    $("#e-amt").value=""; $("#e-note").value="";
     if(mk(tx.date)!==VM()) S.ui.viewMonth=mk(tx.date);
     renderAll(); save();
-    toast("已記錄 "+money(amt));
+    toast("已記錄 "+money(amt)+(isNow()&&heroDaily!==null?"　每天還能花 "+money(heroDaily):""));
     $("#e-amt").focus(); return;
   }
 
@@ -2157,7 +2080,7 @@ document.addEventListener("click", async e=>{
     const box=$("#sa-"+rid), amt=n(box?box.value:o.est);
     if(amt<=0){ box&&box.focus(); return; }
     if(!o.acct){ toast("「"+o.name+"」還沒設定扣款帳戶"); return; }
-    const tx={id:uid(), ruleId:rid, ruleMonth:VM(), date:o.date, amount:amt, dir:o.dir,
+    const tx={id:uid(), ruleId:rid, date:o.date, amount:amt, dir:o.dir,
       acct:o.acct, acct2:o.acct2||"", cat:o.cat||"", proj:"p0", note:o.name};
     if(o.goal){ tx.goal=o.goal; const g=goalOf(o.goal); if(g) g.saved=n(g.saved)+amt; }
     S.txns.push(tx);
@@ -2166,7 +2089,7 @@ document.addEventListener("click", async e=>{
   const un=t.closest("[data-undo]");
   if(un){
     const rid=un.dataset.undo, m=VM();
-    const tx=S.txns.find(x=>x.ruleId===rid&&ruleMonthOf(x)===m);
+    const tx=S.txns.find(x=>x.ruleId===rid&&mk(x.date)===m);
     if(tx){
       if(tx.goal){ const g=goalOf(tx.goal); if(g) g.saved=Math.max(0,n(g.saved)-n(tx.amount)); }
       S.txns=S.txns.filter(x=>x.id!==tx.id);
@@ -2174,6 +2097,11 @@ document.addEventListener("click", async e=>{
     } return;
   }
 
+  const pcd=t.closest("[data-paycard]");
+  if(pcd){ openSettle("card", pcd.dataset.paycard); return; }
+  const um=t.closest("[data-unmark]");
+  if(um){ const [cid,key]=um.dataset.unmark.split(":"), c=acctOf(cid);
+    if(c&&c.marked){ delete c.marked[key]; renderAll(); save(); toast("已取消標記"); } return; }
   const st=t.closest("[data-settle]");
   if(st){ openSettle("tx", st.dataset.settle); return; }
   const sst=t.closest("[data-shsettle]");
@@ -2181,30 +2109,12 @@ document.addEventListener("click", async e=>{
   if(t.id==="st-ok"){ doSettle(); return; }
   if(t.id==="st-cancel"||t.id==="st-x"||t.id==="stDlg"){ $("#stDlg").close(); return; }
   const dtx=t.closest("[data-deltx]");
-  if(dtx){
-    /* 交易列的 ✕ 很容易誤觸，改成兩段式：第一次變成「刪？」並反白，
-       4 秒內再按一次才真的刪；期間點別處或逾時就自己收回。 */
-    const id=dtx.dataset.deltx;
-    if(delArm && delArm.id===id){
-      clearTimeout(delArm.t); delArm=null;
-      S.txns=S.txns.filter(x=>x.id!==id); paint(); save(); toast("已刪除這筆"); return;
-    }
-    if(delArm){ clearTimeout(delArm.t); const p=document.querySelector('[data-deltx="'+delArm.id+'"]');
-      if(p){ p.textContent="✕"; p.classList.remove("armed"); } }
-    dtx.textContent="刪？"; dtx.classList.add("armed");
-    delArm={id, t:setTimeout(()=>{
-      const el=document.querySelector('[data-deltx="'+id+'"]');
-      if(el){ el.textContent="✕"; el.classList.remove("armed"); }
-      delArm=null;
-    },4000)};
-    toast("再按一次刪除");
-    return;
-  }
+  if(dtx){ S.txns=S.txns.filter(x=>x.id!==dtx.dataset.deltx); paint(); save(); toast("已刪除這筆"); return; }
 
   const fx=t.closest("[data-fixdiff]");
   if(fx){
     const a=acctOf(fx.dataset.fixdiff); if(!a) return;
-    const p=stmtForMonth(a,VM()), diff=n(a.stmtBank)-sumCard(a.id,p.s,p.e);
+    const st0=stmtState(a,VM()), p=st0.p, diff=st0.bank===null?0:st0.bank-st0.calc;
     if(diff!==0){
       S.txns.push({id:uid(), date:isoOf(p.e), amount:Math.abs(diff), dir:diff>0?"out":"in",
         acct:a.id, cat:"", proj:"p0", note:"對帳差額補記"});
@@ -2218,55 +2128,9 @@ document.addEventListener("click", async e=>{
       buildLists(); buildEntry(); paint(); save(); } return; }
 
   const ac=t.closest("[data-addacct]");
-  if(ac){ closeAddMenu(); openAcct(ac.dataset.addacct,null); return; }
-  /* 順序要緊：「編輯」在可點整列的裡面，先比對它才不會被整列攔走。
-     帳單輸入框與「已繳款」核取方塊同理，點它們不該彈出明細。 */
+  if(ac){ openAcct(ac.dataset.addacct,null); return; }
   const ea=t.closest("[data-editacct]");
   if(ea){ openAcct(null,ea.dataset.editacct); return; }
-  if(!t.closest("input,select,textarea,label,button")){
-    const ad=t.closest("[data-acctdtl]");
-    if(ad){ openAcctDtl(ad.dataset.acctdtl); return; }
-  }
-
-  // ---- 新增帳戶的下拉選單 ----
-  if(t.id==="addAcct"){
-    const m=$("#addAcctMenu"), open=m.hidden;
-    m.hidden=!open; t.setAttribute("aria-expanded",String(open));
-    if(open) m.querySelector("button").focus();
-    return;
-  }
-
-  // ---- 隱藏金額 ----
-  if(t.closest("#hideAmt")){
-    setAmtHidden(!amtHidden);
-    syncHideBtn();
-    paint(); return;
-  }
-
-  // ---- 帳戶明細面板 ----
-  const rn=t.closest("[data-renew]");
-  if(rn){
-    const a=S.annual.find(x=>x.id===rn.dataset.renew);
-    if(a){
-      /* 日期整體往後推 12 個月，金額不帶——讓他自己 key 一次，
-         避免漲價那年靜默沿用舊金額。 */
-      openEditor("annual", null, {
-        name:a.name, amount:0,
-        start:addMonth(a.start,12), end:addMonth(a.end,12),
-        payMonth:a.payMonth, day:a.day, acct:a.acct, cat:a.cat||""
-      });
-      toast("日期已填好，金額請自己確認");
-    }
-    return;
-  }
-  if(t.id==="openSearch"){ $("#sq-q").value=""; renderSearch(); $("#sqDlg").showModal();
-    setTimeout(()=>$("#sq-q").focus(),60); return; }
-  if(t.id==="sq-x"||t.id==="sqDlg"){ $("#sqDlg").close(); return; }
-  if(t.id==="adt-x"||t.id==="adtDlg"){ $("#adtDlg").close(); return; }
-  if(t.id==="adtPrev"||t.id==="adtNext"){
-    adtMonth=addMonth(adtMonth, t.id==="adtNext"?1:-1); renderAcctDtl(); return;
-  }
-  if(t.id==="adtAll"){ adtAll=!adtAll; renderAcctDtl(); return; }
 
   if(t.id==="ad-ok"){ saveAcct(); return; }
   if(t.id==="ad-cancel"||t.id==="ad-x"||t.id==="acctDlg"){ $("#acctDlg").close(); return; }
@@ -2289,7 +2153,7 @@ document.addEventListener("click", async e=>{
     const k=t.dataset.add;
     const B={ fixed:{id:uid(),name:"",amount:0,day:1,acct:"",cat:""},
       annual:{id:uid(),name:"",amount:0,start:VM(),end:addMonth(VM(),11),payMonth:addMonth(VM(),11).slice(5),day:1,acct:"",cat:""},
-      shared:{id:uid(),name:"",total:0,span:1,people:2,dir:"split",every:6,day:1,acct:"",cat:""},
+      shared:{id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""},
       transfers:{id:uid(),name:"",amount:0,day:1,from:"",to:""},
       projects:{id:uid(),name:"新專案",kind:"oneoff",goalId:"",cap:0,start:todayISO(),end:todayISO()},
       goals:{id:uid(),name:"",target:0,months:12,saved:0,on:true} };
@@ -2349,20 +2213,18 @@ function normalize(o){
   // v6：類別不再有層級，扣不扣改由交易來源決定
   s.cats.forEach(c=>{ delete c.tier; });
   s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled=""; });
-  /* v7：分攤改用「總額＋涵蓋月數」與「共幾人分」。
-     舊的 myPct 換算成人數（50%→2 人、25%→4 人）；換不出整數就取最接近的。 */
-  s.shared.forEach(x=>{
-    if(x.span===undefined) x.span=1;
-    if(x.people===undefined){
-      const pct=n(x.myPct);
-      x.people = pct>0 ? Math.max(1,Math.round(100/pct)) : 2;
-    }
-    delete x.myPct;
-  });
   s.accounts.forEach(a=>{ if(a.payAcct===undefined) a.payAcct=""; });
-  /* v7：固定支出、年繳攤提、分攤要帶類別，確認扣款產生的交易才能進到
-     跟手動記帳一樣的類別統計裡。（v6 曾把 cat 清掉，那時類別還有層級。） */
-  ["fixed","annual","shared","goals"].forEach(k=>s[k].forEach(o=>{ if(o.cat===undefined) o.cat=""; }));
+  // 逐期帳單：舊的單一「已繳款／銀行帳單」欄位轉成以繳款月份為鍵
+  const tm=thisMonth();
+  s.accounts.filter(a=>a.type==="card").forEach(a=>{
+    if(!a.stmtAmt||typeof a.stmtAmt!=="object"){ a.stmtAmt={};
+      if(a.stmtBank!==null&&a.stmtBank!==undefined&&a.stmtBank!=="") a.stmtAmt[tm]=n(a.stmtBank); }
+    if(!a.marked||typeof a.marked!=="object"){ a.marked={};
+      a.marked[addMonth(tm,-1)]=true; a.marked[addMonth(tm,-2)]=true; if(a.paid) a.marked[tm]=true; }
+    delete a.paid; delete a.stmtBank;
+  });
+  ["fixed","annual","shared","goals"].forEach(k=>s[k].forEach(o=>{ delete o.cat; }));
+  s.goals.forEach(g=>{ if(g.cat===undefined) g.cat=""; });
   s.projects.forEach(p=>{ if(p.cap===undefined) p.cap=0; });
   if(!["system","light","dark"].includes(s.theme)) s.theme="system";
   if(!["now","entry","stat","acct","setup"].includes(s.homeTab)) s.homeTab="now";
@@ -2386,32 +2248,12 @@ function applyTheme(){
   }catch(e){}
 }
 const TABNAME={now:"本月",acct:"帳戶",entry:"記帳",stat:"統計",setup:"設定"};
-let curTab="now";   // 給切換動畫判斷方向用
 function goTab(tab){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===tab)));
   ["now","entry","stat","acct","setup"].forEach(k=>{ $("#p-"+k).hidden=(k!==tab); });
-  /* 頂端列依分頁換內容：標題永遠是當前分頁，月份切換只有「本月」用得到，
-     新增帳戶與隱藏金額只在「帳戶」出現。 */
-  /* 依分頁在列上的先後決定滑入方向。動畫靠移除再加上 class 重新觸發，
-     否則連點同一側時不會重播。 */
-  const order=["now","acct","entry","stat","setup"];
-  const from=order.indexOf(curTab), to=order.indexOf(tab);
-  const back = from>-1 && to>-1 && to<from;
-  const pnl=$("#p-"+tab);
-  if(pnl){ pnl.classList.remove("from-left"); void pnl.offsetWidth; if(back) pnl.classList.add("from-left"); }
-  curTab=tab;
-
-  $("#pageTitle").textContent = TABNAME[tab] || "餘裕";
-  $("#mnav").hidden   = tab!=="now";
-  $("#addAcct").hidden= tab!=="acct";
-  $("#hideAmt").hidden= tab!=="acct";
-  closeAddMenu();
   if(tab==="setup"){ setupNav=[]; renderSetup(); }
+  if(tab==="entry"&&S.accounts.length) setTimeout(()=>{ const f=$("#e-amt"); if(f) f.focus(); },80);
   window.scrollTo(0,0);
-}
-function closeAddMenu(){
-  const m=$("#addAcctMenu"); if(!m) return;
-  m.hidden=true; $("#addAcct").setAttribute("aria-expanded","false");
 }
 
 /* ---------- 設定頁：兩層選單 ---------- */
@@ -2476,7 +2318,6 @@ function renderSetup(){
 S = blank();
 applyTheme();
 renderAll();
-syncHideBtn();
 goTab(S.homeTab||"now");
 setSave("本機模式",false);
 
@@ -2496,67 +2337,6 @@ document.addEventListener("focusout",()=>{
   setTimeout(()=>{ if(pendingRemote && !typing()){ const s=pendingRemote; pendingRemote=null; applyRemote(s); } },80);
 });
 
-/* ---------- 頂端列與帳戶頁的雜項互動 ---------- */
-// 點選單以外的地方、或按 Esc，收起新增帳戶選單
-document.addEventListener("click", e=>{
-  const t=evTarget(e);
-  if(!t) return;
-  if(!t.closest("#addAcctMenu") && t.id!=="addAcct") closeAddMenu();
-}, true);
-document.addEventListener("keydown", e=>{
-  if(e.key==="Escape") closeAddMenu();
-  // 帳戶列是 role="button"，鍵盤也要能開明細
-  const t=e.target;
-  if((e.key==="Enter"||e.key===" ") && t instanceof HTMLElement){
-    const ad=t.closest("[data-acctdtl]");
-    if(ad && t===ad){ e.preventDefault(); openAcctDtl(ad.dataset.acctdtl); }
-  }
-});
-// 啟動時把「隱藏金額」的按鈕文字對上實際狀態
-/* 睜眼＝目前看得到金額（按下去會藏）；閉眼＝目前是藏起來的（按下去會顯示）。
-   純圖示沒有文字，所以 aria-label 與 title 要跟著換，不然螢幕報讀器講不出狀態。 */
-function syncHideBtn(){
-  const b=$("#hideAmt"); if(!b) return;
-  b.setAttribute("aria-pressed",String(amtHidden));
-  b.innerHTML = amtHidden ? EYE_OFF : EYE_OPEN;
-  const lbl = amtHidden ? "顯示金額" : "隱藏金額";
-  b.setAttribute("aria-label",lbl); b.setAttribute("title",lbl);
-}
-
-/* ---------- 即時驗證 ----------
-   原本只在按下確認時才驗，錯誤也只是視覺呈現。這裡補兩件事：
-   1. 離開欄位（blur）時就驗 —— 但只在「已經填了東西卻不合法」時才講話，
-      欄位還空著沒填不嘮叨，避免 tab 經過就被罵。
-   2. 使用者一改成合法值就立刻收回錯誤訊息。
-   e-hint 平常放的是操作說明，所以收回錯誤要呼叫 entryHint() 還原，不能清空。 */
-(function inlineValidation(){
-  const errShown = (sel,kw) => { const el=$(sel); return !!el && kw.test(el.textContent); };
-
-  document.addEventListener("blur", e=>{
-    const t=e.target; if(!(t instanceof HTMLElement)) return;
-    if(t.id==="e-amt"){
-      const v=t.value.trim();
-      if(v!=="" && !(n(v)>0)) $("#e-hint").textContent="金額要大於 0。";
-    }else if(t.id==="ad-name"){
-      const dlg=$("#acctDlg");
-      if(dlg && dlg.open && t.dataset.touched==="1" && t.value.trim()==="")
-        $("#ad-hint").textContent="請先輸入帳戶名稱。";
-    }
-  }, true);
-
-  document.addEventListener("input", e=>{
-    const t=e.target; if(!(t instanceof HTMLElement)) return;
-    if(t.id==="sq-q"){ renderSearch(); return; }
-    if(t.id==="e-amt"){
-      t.dataset.touched="1";
-      if(n(t.value)>0 && errShown("#e-hint",/金額/)) entryHint();
-    }else if(t.id==="ad-name"){
-      t.dataset.touched="1";
-      if(t.value.trim()!=="" && errShown("#ad-hint",/帳戶名稱/)) $("#ad-hint").textContent="";
-    }
-  }, true);
-})();
-
 /* ---------- Firebase 儲存層 ----------
    由 firebase.js（module）建立 window.__fb 後通知；這裡只認一個介面：
    __fb.onUser(cb) / __fb.signIn() / __fb.signOut() / __fb.subscribe(uid,next,err) / __fb.write(uid,body) */
@@ -2575,9 +2355,7 @@ function bootStorage(fb){
     window.__user=user;
     if(unsub){ unsub(); unsub=null; }
     if(!user){
-      hideGate(); showGate(window.__fbAuthError
-        ? "上次登入沒有完成（"+window.__fbAuthError+"）。請再按一次登入。"
-        : "");
+      hideGate(); showGate("");
       booted=false; dbRef=null; lastSeen=""; firstLoad=true;
       setSave("未登入",false);
       return;
