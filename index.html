@@ -965,7 +965,7 @@ function demo(){
              {id:"f3",name:"電信",amount:799,day:12,acct:"c2",cat:"k9"}];
   S2.annual=[{id:"a1",name:"停車費",amount:12000,start:addMonth(m,-4),end:addMonth(m,7),
               payMonth:addMonth(m,7).slice(5),day:10,acct:"h1",cat:"k10"}];
-  S2.shared=[{id:"s1",name:"Netflix",total:500,myPct:50,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
+  S2.shared=[{id:"s1",name:"Netflix",total:500,people:2,dir:"iPay",every:6,day:15,acct:"c1",cat:"k9"}];
   S2.transfers=[{id:"tr1",name:"轉帳存款戶",amount:5000,day:20,from:"b1",to:"h1"}];
   S2.accounts=[
     {id:"b1",name:"台新活存",type:"bank",currency:"TWD",balance:86000},
@@ -1021,6 +1021,17 @@ function hitsBudget(t){
   if(t.dir==="ap") return true;       // 別人代墊，仍是你的消費
   return t.dir==="out";
 }
+
+/* ================= 分攤 =================
+   以人數均分。跨月結算一律「月費 × 月數」先乘，再依人數分，最後才四捨五入，
+   避免月費除不盡時每月先進位造成總額誤差。 */
+const shPeople=sh=>Math.max(1,Math.round(n(sh.people))||1);
+const shMine=(sh,total)=>(total===undefined?n(sh.total):total)/shPeople(sh);
+function shSettle(sh,months){
+  const all=n(sh.total)*months, p=shPeople(sh);
+  return Math.round(sh.dir==="iPay" ? all*(p-1)/p : sh.dir==="theyPay" ? all/p : 0);
+}
+const approx=v=>(Math.abs(v-Math.round(v))>1e-9?"約 ":"")+money(v);
 
 /* ================= 動畫工具 ================= */
 const EASE="cubic-bezier(.22,.8,.24,1)";
@@ -1090,7 +1101,7 @@ function scheduleFor(m){
   S.shared.forEach(s=>out.push({
     id:s.id, kind:"shared", name:s.name, est:n(s.total), day:ruleDay(s),
     acct:s.acct||"", cat:s.cat||"", dir:"out",
-    tag:"分攤 · 你的份 "+fmt(n(s.total)*n(s.myPct)/100)}));
+    tag:"分攤 · "+shPeople(s)+" 人 · 你的份 "+approx(shMine(s))}));
 
   S.transfers.forEach(t=>out.push({
     id:t.id, kind:"transfer", name:t.name, est:n(t.amount), day:ruleDay(t),
@@ -1143,8 +1154,8 @@ function calc(){
   S.shared.forEach(sh=>{
     const act=actualOf(m,sh.id);
     const total=act!==undefined?act:n(sh.total);
-    if(act!==undefined) corrected += (act-n(sh.total))*n(sh.myPct)/100;
-    const mine=total*n(sh.myPct)/100;
+    if(act!==undefined) corrected += (act-n(sh.total))/shPeople(sh);
+    const mine=shMine(sh,total);
     if(sh.dir==="split") C+=mine;
     else if(sh.dir==="iPay"){ C+=mine; advance+=total-mine; }
     else if(sh.dir==="theyPay") Sk+=mine;
@@ -1438,7 +1449,7 @@ function paint(){
       const a=sharedAccrued(sh); const isAR=sh.dir==="iPay";
       h+='<div class="tx"><span class="d">'+(a.months||0)+' 月</span>'
        +'<span class="m"><b>'+(isAR?"墊款 · ":"待付 · ")+esc(sh.name)+'</b><span>'
-       +money(a.per)+'／月 · 每 '+n(sh.every)+' 個月結算</span></span>'
+       +approx(a.per)+'／月 · 每 '+n(sh.every)+' 個月結算</span></span>'
        +'<span class="a" style="color:'+(isAR?"var(--good)":"var(--crit)")+'">'+(isAR?"+":"−")+fmt(a.amount)
        +' <button class="stl" data-shsettle="'+sh.id+'">'+(isAR?"收回":"支付")+'</button></span></div>';
     });
@@ -1867,15 +1878,14 @@ function openAcct(type,id){
 const DIRNAME={split:"各付各的",iPay:"我付全額",theyPay:"對方付全額"};
 const EDITORS={
   fixed:{ title:"固定支出", listEmpty:"還沒有固定支出。房租、電信、貸款這類每月同額的支出放這裡。",
-    hint:"金額已在試算扣除。扣款日記帳時請選「不扣額度」的類別，否則同一筆錢會被扣兩次。",
+    hint:"金額已在試算扣除。扣款日到了，在本月頁按確認即可，不需要另外記帳。",
     blank:()=>({id:uid(),name:"",amount:0,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：房租"},
             {k:"amount",label:"每月金額",type:"num"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
-    sum:o=>money(n(o.amount))+"／月　"+ruleDay(o)+" 號　"+(acctOf(o.acct)?acctOf(o.acct).name:'<span style="color:var(--focus)">未設帳戶</span>')
-        +(o.cat?"　"+(catOf(o.cat)||{}).name:'　<span style="color:var(--focus)">未設類別</span>') },
+    sum:o=>money(n(o.amount))+"／月　"+ruleDay(o)+" 號　"+(acctOf(o.acct)?acctOf(o.acct).name:'<span style="color:var(--focus)">未設帳戶</span>') },
 
   annual:{ title:"年繳攤提", listEmpty:"還沒有年繳項目。保費、稅金、停車費這類一年付一次的放這裡。",
     hint:"攤提起訖不必切齊年度。系統會把金額平均分攤到區間內每個月，付款月那筆從池子支出，不影響當月額度。",
@@ -1905,20 +1915,20 @@ const EDITORS={
 
   shared:{ title:"分攤項目", listEmpty:"還沒有分攤項目。跟別人平分的訂閱費放這裡。",
     hint:"三種方向的成本都是「你的份」，差別只在現金何時流動。我付全額時，墊出去的差額會進應收池。",
-    blank:()=>({id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""}),
+    blank:()=>({id:uid(),name:"",total:0,people:2,dir:"split",every:6,day:1,acct:"",cat:""}),
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：Netflix"},
             {k:"total",label:"每月總額",type:"num"},
-            {k:"myPct",label:"我佔 %",type:"num"},
+            {k:"people",label:"分攤人數（含自己）",type:"num"},
             {k:"dir",label:"付款方式",type:"select",rerender:true,
              opts:()=>Object.keys(DIRNAME).map(k=>({v:k,t:DIRNAME[k]}))},
             {k:"every",label:"每幾個月結算",type:"num",when:o=>o.dir!=="split"},
             {k:"day",label:"扣款日",type:"day"},
             {k:"acct",label:"扣款帳戶",type:"acct"}],
 
-    sum:o=>{const total=n(o.total),mine=total*n(o.myPct)/100;
-      return DIRNAME[o.dir]+"　總額 "+money(total)+"　你的成本 <b>"+money(mine)+"／月</b>"
-        +(o.dir==="iPay"?"<br>每月墊 "+money(total-mine)+"，每 "+n(o.every)+" 個月收回 "+money((total-mine)*n(o.every))
-         :o.dir==="theyPay"?"<br>每 "+n(o.every)+" 個月付出 "+money(mine*n(o.every)):"");} },
+    sum:o=>{const total=n(o.total),mine=shMine(o),ev=Math.max(1,n(o.every)),ppl=shPeople(o);
+      return DIRNAME[o.dir]+"　總額 "+money(total)+"　"+ppl+" 人分攤　你的成本 <b>"+approx(mine)+"／月</b>"
+        +(o.dir==="iPay"?"<br>每 "+ev+" 個月收回 <b>"+money(shSettle(o,ev))+"</b>（"+fmt(total)+" × "+ev+" 個月 × "+(ppl-1)+"/"+ppl+"）"
+         :o.dir==="theyPay"?"<br>每 "+ev+" 個月付出 <b>"+money(shSettle(o,ev))+"</b>（"+fmt(total)+" × "+ev+" 個月 ÷ "+ppl+" 人）":"");} },
 
   cats:{ title:"類別", listEmpty:"還沒有類別。",
 hint:"類別只用於分類統計。要不要從額度扣，是看這筆的來源——排程確認產生的不扣，手動記的才扣。",
@@ -2032,10 +2042,10 @@ function saveEditor(){
 let stMode=null, stRef=null;   // stMode: "tx" 單筆應收應付 ｜ "shared" 分攤墊款
 function monthsSince(from,to){ return (!from) ? 0 : Math.max(0, monthsBetween(from,to)-1); }
 function sharedAccrued(sh){
-  const total=n(sh.total), mine=total*n(sh.myPct)/100;
+  const total=n(sh.total), mine=shMine(sh);
   const per = sh.dir==="iPay" ? total-mine : sh.dir==="theyPay" ? mine : 0;
   const ms = monthsSince(sh.lastSettled||"", VM());
-  return {per, months:ms, amount:per*ms};
+  return {per, months:ms, amount:shSettle(sh,ms)};
 }
 function openSettle(mode,id){
   stMode=mode; stRef=id;
@@ -2062,7 +2072,7 @@ function openSettle(mode,id){
     const isAR = sh.dir==="iPay";
     title = isAR ? "收回墊款" : "支付分攤";
     lbl   = isAR ? "收款帳戶" : "付款帳戶";
-    hint  = "「"+sh.name+"」累積 "+a.months+" 個月 × "+money(a.per)+"。確認後重新起算。";
+    hint  = "「"+sh.name+"」月費 "+fmt(n(sh.total))+" × "+a.months+" 個月"+(sh.dir==="iPay"?" × "+(shPeople(sh)-1)+"/"+shPeople(sh):" ÷ "+shPeople(sh)+" 人")+" = "+money(a.amount)+"。確認後重新起算。";
   }
   $("#stTitle").textContent=title;
   $("#st-acctLbl").textContent=lbl;
@@ -2365,7 +2375,7 @@ document.addEventListener("click", async e=>{
     const k=t.dataset.add;
     const B={ fixed:{id:uid(),name:"",amount:0,day:1,acct:"",cat:""},
       annual:{id:uid(),name:"",amount:0,start:VM(),end:addMonth(VM(),11),payMonth:addMonth(VM(),11).slice(5),day:1,acct:"",cat:""},
-      shared:{id:uid(),name:"",total:0,myPct:50,dir:"split",every:6,day:1,acct:"",cat:""},
+      shared:{id:uid(),name:"",total:0,people:2,dir:"split",every:6,day:1,acct:"",cat:""},
       transfers:{id:uid(),name:"",amount:0,day:1,from:"",to:""},
       projects:{id:uid(),name:"新專案",kind:"oneoff",goalId:"",cap:0,start:todayISO(),end:todayISO()},
       goals:{id:uid(),name:"",target:0,months:12,saved:0,on:true} };
@@ -2424,7 +2434,10 @@ function normalize(o){
   if(!s.confirmed||typeof s.confirmed!=="object") s.confirmed={};
   // v6：類別不再有層級，扣不扣改由交易來源決定
   s.cats.forEach(c=>{ delete c.tier; });
-  s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled=""; });
+  s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled="";
+    // 舊資料的「我佔 %」換算成人數（50% → 2 人、25% → 4 人）
+    if(x.people===undefined) x.people=n(x.myPct)>0?Math.max(1,Math.round(100/n(x.myPct))):2;
+    delete x.myPct; });
   s.accounts.forEach(a=>{ if(a.payAcct===undefined) a.payAcct=""; });
   // 逐期帳單：舊的單一「已繳款／銀行帳單」欄位轉成以繳款月份為鍵
   const tm=thisMonth();
