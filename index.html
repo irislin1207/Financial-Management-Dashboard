@@ -582,6 +582,24 @@ button,.btn,.chip,.gcard,.mrow,summary,nav button{touch-action:manipulation}
 button svg,.btn svg,a svg{pointer-events:none}
 input.mask{-webkit-text-security:disc; text-security:disc}
 @media (max-width:720px){ .eye{width:44px; height:44px} }
+
+/* ---------- v3.3：首頁收合成入口列、本月收入 ---------- */
+.tiles{display:flex; gap:10px}
+.tiles .tile{flex:1 1 0; min-width:0}
+#nowMain,#nowSub{display:flex; flex-direction:column; gap:14px}
+#nowRows .mrow{min-height:60px; padding-top:13px; padding-bottom:13px}
+#nowRows .mrow .t{font-weight:800}
+#nowRows .mrow .t span{white-space:normal}
+#nowRows .mrow .c{font-size:.92rem; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums}
+#nowRows .mrow.warn .c,#nowRows .mrow.warn .t span{color:var(--crit-ink)}
+#nowRows .mrow.warn .t span{font-weight:700}
+.incbox{display:flex; flex-direction:column; gap:4px; background:var(--good-soft); border-radius:18px; padding:14px 16px}
+.incbox.est{background:var(--focus-soft)}
+.incbox .eyebrow{font-weight:800; color:var(--good-ink)} .incbox.est .eyebrow{color:var(--focus-ink)}
+.incbox .v{font-size:1.7rem; font-weight:900; font-variant-numeric:tabular-nums; line-height:1.2}
+.incbox .note{color:var(--ink-2)}
+.incbox .btn{align-self:flex-start; margin-top:6px; min-height:44px}
+.ic.k-sal{background:var(--good-soft); color:var(--good-ink)}
 </style>
 
 </head>
@@ -618,56 +636,71 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 
 <!-- 本月 -->
 <div class="panel" id="p-now">
-  <div class="card guide" id="guideCard" hidden>
-    <div class="hd"><h2>開始設定</h2><span class="fl" id="guideFl">—</span></div>
-    <div class="bd tight" id="guideList"></div>
-    <div class="bd sep"><p class="note">依序完成就能開始用。想先看看填滿的樣子，可以到「設定 → 資料」載入示範資料，之後再清空。</p></div>
+  <div class="crumb" id="nowCrumb" hidden></div>
+
+  <div id="nowMain">
+    <div class="card guide" id="guideCard" hidden>
+      <div class="hd"><h2>開始設定</h2><span class="fl" id="guideFl">—</span></div>
+      <div class="bd tight" id="guideList"></div>
+      <div class="bd sep"><p class="note">依序完成就能開始用。想先看看填滿的樣子，可以到「設定 → 資料」載入示範資料，之後再清空。</p></div>
+    </div>
+
+    <section class="hero" id="hero" aria-labelledby="heroLbl">
+      <div class="hero-top"><span class="eyebrow" id="heroLbl">現在還能花</span>
+        <button class="btn sm" id="wfOpen">試算明細</button></div>
+      <div class="hero-v" id="heroV">—</div>
+      <p class="hero-sub" id="heroSub"></p>
+      <div class="meter" id="meter" role="img" aria-label="預算使用進度"><i id="meterFill"></i><b id="meterTick"></b></div>
+      <p class="meter-cap" id="meterCap"></p>
+      <button class="btn pri hero-cta" data-goto="entry">＋ 記一筆</button>
+    </section>
+
+    <div class="tiles">
+      <div class="tile t2" id="cashTile"><span class="eyebrow">可動用現金</span><span class="v" id="tCash">—</span><span class="sub" id="tCashSub"></span></div>
+      <div class="tile t4"><span class="eyebrow">每月必要支出</span><span class="v" id="tMust">—</span><span class="sub" id="tMustSub"></span></div>
+    </div>
+
+    <div class="card" id="todoCard">
+      <div class="hd"><h2>今天要處理</h2><span class="fl" id="todoFl">—</span></div>
+      <div class="bd tight" id="todoList"></div>
+    </div>
+
+    <div class="mlist" id="nowRows"></div>
   </div>
 
-  <section class="hero" id="hero" aria-labelledby="heroLbl">
-    <div class="hero-top"><span class="eyebrow" id="heroLbl">現在還能花</span>
-      <button class="btn sm" id="wfOpen">試算明細</button></div>
-    <div class="hero-v" id="heroV">—</div>
-    <p class="hero-sub" id="heroSub"></p>
-    <div class="meter" id="meter" role="img" aria-label="預算使用進度"><i id="meterFill"></i><b id="meterTick"></b></div>
-    <p class="meter-cap" id="meterCap"></p>
-    <button class="btn pri hero-cta" data-goto="entry">＋ 記一筆</button>
-  </section>
+  <div id="nowSub">
+    <div data-nsec="rsv" hidden>
+      <div class="card" id="rsvCard">
+        <div class="hd"><h2>各帳戶預留</h2><span class="fl" id="rsvFl">—</span></div>
+        <div id="rsvBody"></div>
+        <div class="bd sep"><p class="note" id="rsvNote"></p></div>
+      </div>
+    </div>
 
-  <div class="tiles">
-    <div class="tile t1"><span class="eyebrow" id="tLeftLbl">預算剩餘</span><span class="v" id="tLeft">—</span><span class="sub" id="tLeftSub"></span></div>
-    <div class="tile t2" id="cashTile"><span class="eyebrow">可動用現金</span><span class="v" id="tCash">—</span><span class="sub" id="tCashSub"></span></div>
-    <div class="tile t3"><span class="eyebrow" id="tDayLbl">每日可用</span><span class="v" id="tDay">—</span><span class="sub" id="tDaySub"></span></div>
-    <div class="tile t4"><span class="eyebrow">每月必要支出</span><span class="v" id="tMust">—</span><span class="sub" id="tMustSub"></span></div>
-  </div>
+    <div data-nsec="sched" hidden>
+      <div class="card" id="schedCard"><div class="hd"><h2>本月固定扣款</h2><span class="fl" id="schedFl">—</span></div>
+        <div class="bd tight" id="schedList"></div>
+        <div class="bd sep"><p class="note">金額對就直接按確認；不對先改再按。確認後會產生一筆真的交易，影響帳戶餘額與卡片帳單，固定承諾的試算也會用實際金額重算。</p></div></div>
+      <div class="card" id="dueCard"><div class="hd"><h2 id="dueTitle">卡費繳款</h2><span class="fl" id="dueFl">—</span></div>
+        <div class="bd tight" id="upcoming"></div></div>
+    </div>
 
-  <div class="card" id="todoCard">
-    <div class="hd"><h2>今天要處理</h2><span class="fl" id="todoFl">—</span></div>
-    <div class="bd tight" id="todoList"></div>
-  </div>
+    <div data-nsec="pool" hidden>
+      <div class="card" id="poolCard" hidden><div class="hd"><h2>應收與應付</h2><span class="fl">未結清</span></div>
+        <div class="bd tight" id="poolList"></div></div>
+    </div>
 
-  <div class="card" id="rsvCard">
-    <div class="hd"><h2>各帳戶預留</h2><span class="fl" id="rsvFl">—</span></div>
-    <div id="rsvBody"></div>
-    <div class="bd sep"><p class="note" id="rsvNote"></p></div>
-  </div>
-
-  <div class="card" id="schedCard"><div class="hd"><h2>本月固定扣款</h2><span class="fl" id="schedFl">—</span></div>
-    <div class="bd tight" id="schedList"></div>
-    <div class="bd sep"><p class="note">金額對就直接按確認；不對先改再按。確認後會產生一筆真的交易，影響帳戶餘額與卡片帳單，固定承諾的試算也會用實際金額重算。</p></div></div>
-
-  <div class="card" id="dueCard"><div class="hd"><h2 id="dueTitle">本月排程</h2><span class="fl" id="dueFl">—</span></div>
-    <div class="bd tight" id="upcoming"></div></div>
-
-  <div class="card" id="poolCard" hidden><div class="hd"><h2>應收與應付</h2><span class="fl">未結清</span></div>
-    <div class="bd tight" id="poolList"></div></div>
-
-  <div class="card" id="openCard">
-    <div class="hd"><h2>本月計畫</h2><span class="fl" id="openFl">—</span></div>
-    <div class="bd">
-      <div class="row"><label for="i-sal">收入預設值<span class="hint">沒有收入紀錄時才使用</span></label><input class="n" id="i-sal" inputmode="numeric"></div>
-      <p class="note" id="incNote"></p>
-      <button class="btn pri" id="confirmOpen" style="padding:9px">確認當月計畫</button>
+    <div data-nsec="plan" hidden>
+      <div class="card" id="openCard">
+        <div class="hd"><h2>本月計畫</h2><span class="fl" id="openFl">—</span></div>
+        <div class="bd">
+          <div class="incbox" id="incBox"><span class="eyebrow" id="incLbl">本月收入</span><span class="v" id="incV">—</span>
+            <p class="note" id="incNote"></p>
+            <button class="btn pri" id="salBtn" type="button" hidden>薪水入帳</button></div>
+          <div class="row"><label for="i-est">這個月的預估收入<span class="hint" id="estHint"></span></label><input class="n" id="i-est" inputmode="numeric"></div>
+          <button class="btn pri" id="confirmOpen" style="padding:9px">確認當月計畫</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -864,8 +897,9 @@ input.mask{-webkit-text-security:disc; text-security:disc}
   <div data-sec="params" hidden>
     <div class="card"><div class="hd"><h2>試算參數</h2></div>
       <div class="bd">
+        <div class="row"><label for="i-sal">預設月收入<span class="hint">新的月份自動帶入；個別月份可在本月計畫調整</span></label><input class="n" id="i-sal" inputmode="numeric"></div>
         <div class="row"><label for="i-buf">安全緩衝 %<span class="hint">從日常額度預留</span></label><input class="n" id="i-buf" inputmode="numeric"></div>
-        <div class="row"><label for="i-day">開帳提醒日<span class="hint">發薪日；會計期間仍為日曆月</span></label><input class="n" id="i-day" inputmode="numeric"></div>
+        <div class="row"><label for="i-day">發薪日<span class="hint">當天會提醒薪水入帳；會計期間仍為日曆月</span></label><input class="n" id="i-day" inputmode="numeric"></div>
       </div></div>
   </div>
 
@@ -978,7 +1012,7 @@ const isoOf = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-
 
 /* ================= 資料 ================= */
 function blank(){
-  return {v:6, payDay:5, bufferPct:5, confirmed:{}, incomeFallback:0,
+  return {v:6, payDay:5, bufferPct:5, confirmed:{}, incomeFallback:0, incomeEst:{}, salaryAcct:"",
     theme:"system", homeTab:"now",
     fixed:[], annual:[], shared:[], transfers:[], accounts:[],
     cats:DEFAULT_CATS.map(c=>({...c})),
@@ -1170,13 +1204,23 @@ function actualOf(m,ruleId){
   return t?n(t.amount):undefined;
 }
 
+const salaryCat=()=>((S.cats.find(c=>c.kind==="in"&&c.name==="薪水")||S.cats.find(c=>c.kind==="in"&&c.id==="n1")||{}).id)||"";
+const payDayNum=()=>Math.min(28,Math.max(1,n(S.payDay)||1));
+
 /* ================= 計算 ================= */
 function calc(){
   const m=VM();
   const mtx=S.txns.filter(t=>mk(t.date)===m);
 
   const loggedIn=mtx.filter(t=>t.dir==="in"&&(acctOf(t.acct)||{}).type!=="card").reduce((a,t)=>a+n(t.amount),0);
-  const I = loggedIn>0 ? loggedIn : n(S.incomeFallback);
+  // 收入三層：實際入帳 → 這個月的預估 → 預設月收入。
+  // 薪水入帳前先用預估；只記了利息這類小額收入時，不會把整個月的額度拉低。
+  const estM=(S.incomeEst&&S.incomeEst[m]!==undefined&&S.incomeEst[m]!=="")?n(S.incomeEst[m]):null;
+  const est=estM!==null?estM:n(S.incomeFallback);
+  const sc0=salaryCat();
+  const salIn=mtx.some(t=>t.dir==="in"&&(t.salary||(sc0&&t.cat===sc0)));
+  const I = salIn ? loggedIn : Math.max(loggedIn, est);
+  const incSrc = (salIn||(loggedIn>0&&loggedIn>=est)) ? "actual" : estM!==null ? "est" : "default";
 
   // 固定支出：已確認的實際金額取代預估
   let C=0, Sk=0, advance=0, corrected=0;
@@ -1230,7 +1274,7 @@ function calc(){
     .reduce((a,p)=>a+n(p.cap),0);
   const p0cap=dailyCap-allocated;
 
-  return {m,mtx,I,loggedIn,C,S:Sk,G,gDetail,buffer,dailyCap,usedDaily,usedProj,invested,
+  return {m,mtx,I,loggedIn,est,estM,salIn,incSrc,C,S:Sk,G,gDetail,buffer,dailyCap,usedDaily,usedProj,invested,
           left,days,daysLeft,advance,corrected,allocated,p0cap,
           sched:scheduleFor(m),
           arOpen:S.txns.filter(t=>t.dir==="ar"&&!t.settled),
@@ -1368,7 +1412,7 @@ function defaultDate(){ return isNow()?todayISO():lastDayISO(VM()); }
 function setupSteps(){
   return [
     {k:"acct", ok:S.accounts.length>0,  t:"新增帳戶",     s:"銀行、現金、信用卡至少各一個", tab:"acct"},
-    {k:"inc",  ok:n(S.incomeFallback)>0||S.txns.some(t=>t.dir==="in"), t:"填入收入", s:"在本月頁填預設值，或直接記一筆收入", tab:"now"},
+    {k:"inc",  ok:n(S.incomeFallback)>0||Object.keys(S.incomeEst||{}).length>0||S.txns.some(t=>t.dir==="in"), t:"填入收入", s:"在本月計畫填這個月的預估收入", tab:"now", sub:"plan"},
     {k:"fix",  ok:S.fixed.length>0,     t:"設定固定承諾", s:"房租、電信、孝親費等每月不變的支出", tab:"setup"},
     {k:"goal", ok:S.goals.length>0,     t:"設定儲蓄目標", s:"金額與期限，系統算出每月該提撥多少", tab:"setup"},
     {k:"tx",   ok:S.txns.length>0,      t:"記第一筆帳",   s:"金額、類別、帳戶，三秒完成", tab:"entry"}
@@ -1382,7 +1426,7 @@ function paintHeader(r){
   $("#mJump").value=m;
   $("#mToday").hidden=isNow();
   $("#mSub").textContent = isNow()
-    ? "共 "+r.days+" 天 · 尚餘 "+r.daysLeft+" 天 · 開帳提醒 "+n(S.payDay)+" 號"
+    ? "共 "+r.days+" 天 · 尚餘 "+r.daysLeft+" 天 · 發薪日 "+n(S.payDay)+" 號"
     : "共 "+r.days+" 天 · 歷史月份";
   document.querySelectorAll("#p-now h2, #p-entry h2, #dueTitle").forEach(()=>{});
   $("#dueTitle").textContent = isNow()?"本月排程":"當月排程";
@@ -1400,30 +1444,27 @@ function paint(){
     $("#guideList").innerHTML=steps.map(x=>
       '<div class="step'+(x.ok?" done":"")+'"><span class="mk'+(x.ok?" ok":"")+'">'+(x.ok?"✓":"○")+'</span>'
       +'<span class="tx2">'+x.t+'<span>'+x.s+'</span></span>'
-      +(x.ok?'<span></span>':'<button class="btn sm" data-goto="'+x.tab+'">前往</button>')+'</div>').join("");
+      +(x.ok?'<span></span>':'<button class="btn sm" data-goto="'+x.tab+'"'+(x.sub?' data-sub="'+x.sub+'"':'')+'>前往</button>')+'</div>').join("");
   }
 
   const done=!!S.confirmed[r.m];
   $("#openFl").innerHTML=done?'<span class="pill g">已確認</span>':'<span class="pill a">待確認</span>';
   $("#confirmOpen").textContent=done?"已確認 · 重新確認":"確認當月計畫";
-  $("#incNote").textContent = r.loggedIn>0
-    ? "當月已記錄收入 "+money(r.loggedIn)+"，試算以實際記錄為準。上方欄位僅在沒有收入紀錄時使用。"
-    : "當月尚無收入紀錄，試算使用上方欄位。記一筆收入後會自動改用實際金額。";
+  const actual=r.incSrc==="actual";
+  $("#incBox").className="incbox"+(actual?"":" est");
+  $("#incLbl").textContent=actual?"本月收入 · 已入帳":"本月收入 · 預估";
+  rollNum($("#incV"),r.I,money);
+  $("#incNote").textContent = actual
+    ? "以實際記錄的收入計算"+(r.salIn?"，薪水已入帳。":"。")
+    : (r.estM!==null?"用的是這個月的預估。":"用的是預設月收入。")+"薪水尚未入帳"
+      +(r.loggedIn>0?"，已記錄的其他收入 "+money(r.loggedIn)+" 暫不計入":"")+"；入帳後改用實際金額。";
+  $("#salBtn").hidden=!(isNow()&&!actual&&r.est>0);
+  const estEl=$("#i-est");
+  if(document.activeElement!==estEl||estEl.dataset.m!==r.m){ estEl.value=r.estM!==null?r.estM:""; estEl.dataset.m=r.m; }
+  estEl.placeholder=String(n(S.incomeFallback)||"");
+  $("#estHint").textContent="只影響 "+r.m.replace("-","/")+"；留空就用預設月收入 "+fmt(n(S.incomeFallback));
 
-  $("#tLeftLbl").textContent="預算剩餘"; $("#dueCard").hidden=isNow();
-  rollNum($("#tLeft"),r.left,money);
-  $("#tLeft").parentElement.classList.toggle("warn",r.left<0);
-  $("#tLeftSub").textContent="日常額度 "+money(r.dailyCap)+"　已用 "+money(r.usedDaily)
-    +(r.allocated>0?"　含 "+S.projects.filter(p=>p.kind==="recurring").length+" 個信封":"");
-  if(isNow()){
-    $("#tDayLbl").textContent="每日可用";
-    rollNum($("#tDay"),r.left/Math.max(1,r.daysLeft),money);
-    $("#tDaySub").textContent="剩餘 "+r.daysLeft+" 天平均"+(r.usedProj>0?"　專案另計 "+money(r.usedProj):"");
-  } else {
-    $("#tDayLbl").textContent="當月結餘";
-    rollNum($("#tDay"),r.left,money);
-    $("#tDaySub").textContent="該月結束後剩下的日常額度"+(r.usedProj>0?"　專案另計 "+money(r.usedProj):"");
-  }
+  $("#dueCard").hidden=isNow();
 
   const base=Math.max(r.I,1);
   const rows=[["月收入",r.I,"var(--accent)",false],["固定支出",-r.C,"var(--ink-2)",false],
@@ -1507,8 +1548,46 @@ function paint(){
   $("#txFl").textContent=list.length+" 筆 · 日常支出 "+money(r.usedDaily);
 
   paintStat(r); paintAcct(r);
-  $("#i-sal").value=n(S.incomeFallback);
+  const salEl=$("#i-sal"); if(document.activeElement!==salEl) salEl.value=n(S.incomeFallback);
+  paintNowRows(r);
   $("#dataFl").textContent=S.txns.length+" 筆交易 · "+S.accounts.length+" 個帳戶";
+}
+
+let lastF=null, nowSec=null, nowDir="f";
+const NOWSEC={rsv:"帳戶預留",sched:"固定扣款",pool:"應收與應付",plan:"本月計畫"};
+function paintNowRows(r){
+  const now=isNow(), f=lastF, rows=[];
+  if(now&&f){
+    const short=f.rows.filter(x=>x.free<0).length+(f.loose.length?1:0);
+    rows.push({k:"rsv", t:"帳戶預留", warn:short>0,
+      s:!f.rows.length?"新增銀行帳戶後，這裡會算出每個帳戶要留多少"
+        :f.rows.filter(x=>x.free<0).length?f.rows.filter(x=>x.free<0).length+" 個帳戶不足，需要搬錢"
+        :f.loose.length?"有 "+f.loose.length+" 筆沒指定扣款帳戶":"每個帳戶都夠付已知的扣款",
+      c:f.ev.length?money(f.totalBal-f.totalFree):"—"});
+  }
+  const sc=r.sched, pend=sc.filter(x=>x.state!=="done"), late=sc.filter(x=>x.state==="late").length;
+  if(sc.length||!now) rows.push({k:"sched", t:now?"本月固定扣款":"當月扣款與繳款", warn:now&&late>0,
+    s:sc.length?"已確認 "+(sc.length-pend.length)+" / "+sc.length+" 筆"+(now&&late?"　逾期 "+late+" 筆":""):"當月沒有固定扣款",
+    c:pend.length?"待扣 "+fmt(pend.reduce((a,o)=>a+n(o.est),0)):sc.length?"全部完成":"—"});
+  if(!$("#poolCard").hidden){
+    let ar=r.arOpen.reduce((a,t)=>a+n(t.amount),0), ap=r.apOpen.reduce((a,t)=>a+n(t.amount),0);
+    S.shared.forEach(sh=>{ const a=sharedAccrued(sh); if(sh.dir==="iPay") ar+=a.amount; else if(sh.dir==="theyPay") ap+=a.amount; });
+    rows.push({k:"pool", t:"應收與應付", s:"待收回 "+fmt(ar)+"　待支付 "+fmt(ap), c:(ar-ap<0?"−":"+")+fmt(Math.abs(ar-ap))});
+  }
+  rows.push({k:"plan", t:"本月計畫", s:"收入 "+money(r.I)+(r.incSrc==="actual"?"（已入帳）":"（預估）"),
+    c:S.confirmed[r.m]?'<span class="pill g">已確認</span>':'<span class="pill a">待確認</span>'});
+  setHTML($("#nowRows"),rows.map(x=>
+    '<button class="mrow'+(x.warn?" warn":"")+'" data-nopen="'+x.k+'"><span class="t">'+x.t+'<span>'+esc(x.s)+'</span></span>'
+    +'<span class="c">'+x.c+'</span><span class="ar">›</span></button>').join(""));
+  if(nowSec&&!rows.some(x=>x.k===nowSec)){ nowSec=null; }
+  renderNow(false);
+}
+function renderNow(animate){
+  const main=$("#nowMain"), crumb=$("#nowCrumb");
+  document.querySelectorAll("#nowSub [data-nsec]").forEach(e=>{ e.hidden=e.dataset.nsec!==nowSec; });
+  main.hidden=!!nowSec; crumb.hidden=!nowSec;
+  if(nowSec) setHTML(crumb,'<button class="bk" data-nback>‹ 本月</button><span class="now">'+NOWSEC[nowSec]+'</span>');
+  if(animate!==false){ setupDir=nowDir; anim(nowSec?document.querySelector('#nowSub [data-nsec="'+nowSec+'"]'):main); }
 }
 
 let rsvOpen={}, heroDaily=null;
@@ -1518,7 +1597,7 @@ document.addEventListener("toggle", e=>{
 
 function paintReserve(r){
   const now=isNow();
-  $("#rsvCard").hidden=!now; $("#cashTile").hidden=!now; $("#todoCard").hidden=!now;
+  $("#cashTile").hidden=!now; $("#todoCard").hidden=!now; lastF=null;
   rollNum($("#tMust"),r.C+r.S,money);
   $("#tMustSub").textContent="固定支出 "+money(r.C)+"　年繳攤提 "+money(r.S)+(r.G>0?"　另有儲蓄提撥 "+money(r.G):"");
   const f=now?forecast():null;
@@ -1543,6 +1622,7 @@ function paintReserve(r){
   $("#meterCap").textContent="預算已用 "+usedPct.toFixed(0)+"%"
     +(now?"　本月已過 "+timePct.toFixed(0)+"%"+(usedPct>timePct+5?"　花得比時間快":""):"");
   if(!now) return;
+  lastF=f;
 
   rollNum($("#tCash"),f.totalFree,money);
   $("#cashTile").classList.toggle("warn",f.totalFree<0);
@@ -1554,6 +1634,10 @@ function paintReserve(r){
   if(!S.confirmed[r.m]) todo.push({o:0, cls:"due", dy:"本月", name:"確認本月計畫",
     sub:"收入 "+money(r.I)+"　日常額度 "+money(r.dailyCap),
     act:'<button class="btn sm pri" data-confirmopen>確認</button>'});
+  if(r.incSrc!=="actual"&&r.est>0&&f.today.getDate()>=payDayNum())
+    todo.push({o:+new Date(f.today.getFullYear(),f.today.getMonth(),payDayNum()), cls:"due", dy:payDayNum()+" 號",
+      name:"薪水入帳了嗎？", amt:r.est, sub:"金額可以改；入帳後帳戶餘額一起增加",
+      act:'<button class="btn sm pri" data-salary>入帳</button>'});
   f.tips.forEach(t=>{
     t.from.forEach(x=>todo.push({o:+t.by, cls:"late", dy:when(t.by)+(+t.by>+f.today?" 前":""),
       name:"轉 "+((t.a.currency||"TWD")==="TWD"?fmt(x.amt):money(x.amt,t.a.currency))+" 到 "+t.a.name, sub:"從 "+x.a.name+" 轉出",
@@ -1576,12 +1660,14 @@ function paintReserve(r){
   });
   todo.sort((x,y)=>x.o-y.o);
   $("#todoFl").textContent=todo.length?todo.length+" 件":"都處理完了";
+  $("#todoList").hidden=!todo.length;
   const TICON={
     plan:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+    sal:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v10M14.8 9.7c-.5-.8-1.5-1.3-2.8-1.3-1.6 0-2.7.8-2.7 1.9 0 2.5 5.6 1.2 5.6 3.8 0 1.1-1.2 1.9-2.9 1.9-1.3 0-2.4-.5-2.9-1.4"/>',
     move:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
     sched:'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>',
     card:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18"/>'};
-  const kindOf=t=>/data-confirmopen/.test(t.act)?"plan":/data-ok=/.test(t.act)?"sched":/data-paycard/.test(t.act)?"card":"move";
+  const kindOf=t=>/data-salary/.test(t.act)?"sal":/data-confirmopen/.test(t.act)?"plan":/data-ok=/.test(t.act)?"sched":/data-paycard/.test(t.act)?"card":"move";
   $("#todoList").innerHTML=todo.map(t=>{
     const k=kindOf(t);
     return '<div class="todo"><span class="ic k-'+k+'"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+TICON[k]+'</svg></span>'
@@ -2098,7 +2184,7 @@ function sharedAccrued(sh){
 function openSettle(mode,id){
   stMode=mode; stRef=id;
   const banks=S.accounts.filter(a=>a.type!=="card");
-  let amt=0, title="結清", lbl="收款帳戶", hint="", pre="";
+  let amt=0, title="結清", lbl="收款帳戶", hint="", pre="", preDate="";
   if(mode==="tx"){
     const t=S.txns.find(x=>x.id===id); if(!t) return;
     amt=n(t.amount);
@@ -2108,6 +2194,11 @@ function openSettle(mode,id){
     hint  = isAR
       ? "當初是從「"+((acctOf(t.acct)||{}).name||"？")+"」墊出去的，收回時可以進不同帳戶。這筆是沖銷，不算收入。"
       : "別人先幫你付的，現在還他。這筆是沖銷，不算支出（消費當下已經扣過額度）。";
+  } else if(mode==="salary"){
+    const r=calc(), pd=payDayNum(), t=new Date();
+    amt=Math.round(r.est); title="薪水入帳"; lbl="入帳帳戶"; pre=S.salaryAcct||"";
+    preDate=t.getDate()>=pd?isoOf(new Date(t.getFullYear(),t.getMonth(),pd)):"";
+    hint="金額改成實際入帳的數字即可。確認後記成一筆薪水收入，這個月的試算改用實際金額，下次會記得這個帳戶。";
   } else if(mode==="card"){
     const [cid,key]=id.split(":"), c=acctOf(cid); if(!c) return;
     const st=stmtState(c,key);
@@ -2128,7 +2219,7 @@ function openSettle(mode,id){
   $("#st-acct").innerHTML=banks.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join("")
     ||'<option value="">尚無帳戶</option>';
   if(pre&&banks.some(a=>a.id===pre)) $("#st-acct").value=pre;
-  $("#st-date").value=todayISO();
+  $("#st-date").value=preDate||todayISO();
   $("#st-hint").textContent=hint;
   $("#stDlg").showModal();
 }
@@ -2142,6 +2233,10 @@ function doSettle(){
     S.txns.push({id:uid(), date, amount:amt, dir:"settle", acct, cat:"", proj:"p0",
       settleOf:t.id, note:(t.dir==="ar"?"收回 · ":"還款 · ")+(t.note||"")});
     toast((t.dir==="ar"?"已收回 ":"已還款 ")+money(amt));
+  } else if(stMode==="salary"){
+    S.txns.push({id:uid(), date, amount:amt, dir:"in", acct, acct2:"", cat:salaryCat(), proj:"p0", note:"薪資", salary:true});
+    S.salaryAcct=acct;
+    toast("薪水已入帳 "+money(amt));
   } else if(stMode==="card"){
     const [cid,key]=stRef.split(":"), c=acctOf(cid); if(!c) return;
     S.txns.push({id:uid(), date, amount:amt, dir:"transfer", acct, acct2:c.id, cat:"", proj:"p0",
@@ -2455,6 +2550,8 @@ document.addEventListener("input", e=>{
   const t=e.target; if(!(t instanceof HTMLElement)) return;
   let hit=true, re=false;
   if(t.id==="i-sal") S.incomeFallback=n(t.value);
+  else if(t.id==="i-est"){ if(!S.incomeEst) S.incomeEst={};
+    if(t.value.trim()==="") delete S.incomeEst[VM()]; else S.incomeEst[VM()]=n(t.value); }
   else if(t.id==="i-buf") S.bufferPct=n(t.value);
   else if(t.id==="i-day") S.payDay=Math.min(28,Math.max(1,n(t.value)));
   else if(t.id==="e-amt"||t.id==="e-note"||t.id==="impBox"||/^sa-/.test(t.id)||/^ad-/.test(t.id)||/^ed-/.test(t.id)) return;
@@ -2506,7 +2603,15 @@ document.addEventListener("click", async e=>{
   while(t&&!(t instanceof HTMLElement)) t=t.parentNode;      // 點到按鈕裡的圖示（SVG）時，往上找到按鈕本身
   if(!t) return;
   const tab=t.closest("nav button"); if(tab){ goTab(tab.dataset.t); return; }
-  const gt=t.closest("[data-goto]"); if(gt){ goTab(gt.dataset.goto); return; }
+  const gt=t.closest("[data-goto]");
+  if(gt){
+    if(gt.dataset.sub&&gt.dataset.goto==="now"){ if(curTab!=="now") goTab("now"); nowSec=gt.dataset.sub; nowDir="f"; renderNow(); window.scrollTo(0,0); }
+    else goTab(gt.dataset.goto);
+    return; }
+  const no=t.closest("[data-nopen]");
+  if(no){ nowSec=no.dataset.nopen; nowDir="f"; renderNow(); window.scrollTo(0,0); return; }
+  if(t.closest("[data-nback]")){ nowSec=null; nowDir="b"; renderNow(); window.scrollTo(0,0); return; }
+  if(t.closest("[data-salary]")||t.id==="salBtn"){ openSettle("salary",""); return; }
 
   const sg=t.closest("[data-sgroup]");
   if(sg){ setupDir="f"; setupNav=[sg.dataset.sgroup]; renderSetup(); window.scrollTo(0,0); return; }
@@ -2735,6 +2840,8 @@ function normalize(o){
   if(!s.confirmed||typeof s.confirmed!=="object") s.confirmed={};
   // v6：類別不再有層級，扣不扣改由交易來源決定
   s.cats.forEach(c=>{ delete c.tier; });
+  if(!s.incomeEst||typeof s.incomeEst!=="object"||Array.isArray(s.incomeEst)) s.incomeEst={};
+  if(typeof s.salaryAcct!=="string") s.salaryAcct="";
   s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled="";
     // 舊資料的「我佔 %」換算成人數（50% → 2 人、25% → 4 人）
     if(x.people===undefined) x.people=n(x.myPct)>0?Math.max(1,Math.round(100/n(x.myPct))):2;
@@ -2781,6 +2888,7 @@ function goTab(tab){
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===tab)));
   if(tabDone){ tabDone(); tabDone=null; }
   if(tab==="setup"){ setupNav=[]; renderSetup(false); }
+  if(tab==="now"&&nowSec){ nowSec=null; renderNow(false); }
   const inP=$("#p-"+tab), outP=(prev&&prev!==tab)?$("#p-"+prev):null;
   window.scrollTo(0,0);
   const slide=!!outP&&!!inP.animate&&!RM();
@@ -2817,6 +2925,7 @@ document.addEventListener("touchend",e=>{
   if(!swp) return;
   const t=e.changedTouches[0], dx=t.clientX-swp.x, dy=t.clientY-swp.y, dt=Date.now()-swp.t; swp=null;
   if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>600) return;
+  if(curTab==="now"&&dx>0&&nowSec){ nowSec=null; nowDir="b"; renderNow(); window.scrollTo(0,0); return; }
   if(curTab==="setup"&&dx>0&&setupNav.length){ setupDir="b"; setupNav.pop(); renderSetup(); window.scrollTo(0,0); return; }
   const i=TABS.indexOf(curTab)+(dx<0?1:-1);
   if(i>=0&&i<TABS.length) goTab(TABS[i]);
@@ -2878,7 +2987,7 @@ const SETUP_GROUPS=[
     {id:"shared",    name:"分攤項目", sub:"跟別人平分的費用",         c:()=>S.shared.length+" 項"},
     {id:"cats",      name:"類別",     sub:"扣額度／不扣額度",         c:()=>S.cats.length+" 個"},
     {id:"goals",     name:"儲蓄目標", sub:"金額與期限，自動算月提撥", c:()=>S.goals.length+" 個"},
-    {id:"params",    name:"試算參數", sub:"安全緩衝、開帳提醒日",     c:()=>n(S.bufferPct)+"% / "+n(S.payDay)+" 號"}
+    {id:"params",    name:"試算參數", sub:"預設月收入、安全緩衝、發薪日",     c:()=>n(S.bufferPct)+"% / "+n(S.payDay)+" 號"}
   ]},
   {id:"sys", name:"系統設定", desc:"帳號、外觀、啟動頁、資料匯出與匯入", secs:[
     {id:"account", name:"帳號",      sub:"登入中的 Google 帳號",  c:()=>(window.__user?.email||"未登入").split("@")[0]},
