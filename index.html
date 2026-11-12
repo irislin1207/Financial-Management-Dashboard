@@ -569,6 +569,19 @@ dialog[open] .sheet{animation:popIn .32s var(--spring) both}
     padding:8px 10px calc(6px + env(safe-area-inset-bottom,0px)); box-shadow:0 -4px 18px rgba(81,50,41,.12)}
   #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 }
+
+/* ---------- v3.2 ---------- */
+[hidden]{display:none !important}                 /* 有設 display 的元素（grid、flex）也要能被 hidden 藏起來 */
+button,.btn,.chip,.gcard,.mrow,summary,nav button{touch-action:manipulation}
+.eye{display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; padding:0;
+  border:0; border-radius:50%; background:var(--surface-2); color:var(--ink-2); cursor:pointer;
+  transition:background .15s ease, color .15s ease, transform .3s var(--spring)}
+.eye:hover{background:var(--accent-soft); color:var(--accent-ink)} .eye:active{transform:scale(.9)}
+.eye[aria-pressed="true"]{background:var(--accent-soft); color:var(--accent-ink)}
+.eye svg{width:20px; height:20px}
+button svg,.btn svg,a svg{pointer-events:none}
+input.mask{-webkit-text-security:disc; text-security:disc}
+@media (max-width:720px){ .eye{width:44px; height:44px} }
 </style>
 
 </head>
@@ -712,7 +725,9 @@ dialog[open] .sheet{animation:popIn .32s var(--spring) both}
 
 <!-- 帳戶 -->
 <div class="panel" id="p-acct" hidden>
-  <div class="card"><div class="hd"><h2>帳戶</h2><span style="display:flex;gap:5px;flex-wrap:wrap">
+  <div class="card"><div class="hd"><span style="display:flex;gap:10px;align-items:center"><h2>帳戶</h2>
+    <button class="eye" id="eyeBtn" type="button" aria-pressed="false" aria-label="隱藏餘額"></button></span>
+    <span style="display:flex;gap:5px;flex-wrap:wrap">
     <button class="btn sm" data-addacct="bank">＋ 銀行</button>
     <button class="btn sm" data-addacct="cash">＋ 現金</button>
     <button class="btn sm" data-addacct="sec">＋ 證券</button>
@@ -1035,6 +1050,17 @@ function hitsBudget(t){
   if(t.dir==="ap") return true;       // 別人代墊，仍是你的消費
   return t.dir==="out";
 }
+
+/* 內容相同就不重寫 DOM：避免按鈕在「按下」到「放開」之間被換掉，造成那一下沒反應 */
+function setHTML(el,html){ if(!el||el._h===html) return false; el._h=html; el.innerHTML=html; return true; }
+
+/* 隱藏餘額：每台裝置各自記住，不跟著帳號同步 */
+const MASK="＊＊＊＊";
+let hideBal=false, txMask=false;
+try{ hideBal=localStorage.getItem("yuyu.hideBal")==="1"; }catch(e){}
+const EYE={
+  on:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  off:'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.5 6.6A17.3 17.3 0 0 0 2 12s3.6 7 10 7a10.3 10.3 0 0 0 5.3-1.5"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>'};
 
 /* ================= 分攤 =================
    以人數均分。跨月結算一律「月費 × 月數」先乘，再依人數分，最後才四捨五入，
@@ -1608,7 +1634,7 @@ function txRow(t){
     .concat(p&&p.id!=="p0"?[p.name]:[]).join(" · "); }
   return '<div class="tx" data-id="'+t.id+'"><span class="d">'+t.date.slice(5).replace("-","/")+'</span>'
     +'<span class="m"><b>'+esc(t.note||(DIRALL[t.dir]||{label:"交易"}).label)+'</b><span>'+esc(tag)+'</span></span>'
-    +'<span class="a'+cls+'">'+sign+fmt(n(t.amount))
+    +'<span class="a'+cls+'">'+(txMask?MASK:sign+fmt(n(t.amount)))
     +' <button class="del" data-deltx="'+t.id+'" aria-label="刪除">✕</button></span></div>';
 }
 
@@ -1688,32 +1714,38 @@ function paintStat(r){
 }
 
 function paintAcct(r){
+  const M=(v,c)=>hideBal?MASK:money(v,c), F=v=>hideBal?MASK:fmt(v);
+  const eb=$("#eyeBtn");
+  eb.setAttribute("aria-pressed",String(hideBal)); eb.setAttribute("aria-label",hideBal?"顯示餘額":"隱藏餘額");
+  eb.title=hideBal?"顯示餘額":"隱藏餘額"; setHTML(eb,hideBal?EYE.off:EYE.on);
+  txMask=hideBal;
+  try{
   const grp=(type,el,sumEl)=>{
     const list=S.accounts.filter(a=>a.type===type);
-    $(el).innerHTML=list.map(a=>{
+    setHTML($(el),list.map(a=>{
       const bal=balanceOf(a,isNow()?null:r.m);
       const mv=S.txns.filter(t=>(t.acct===a.id||t.acct2===a.id)&&mk(t.date)===r.m).sort((x,y)=>x.date<y.date?1:-1);
       return '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b>'
         +'<span style="display:flex;gap:6px;align-items:center">'
         +'<span class="pill'+(a.currency!=="TWD"?" a":"")+'">'+esc(a.currency||"TWD")+'</span>'
         +'<button class="btn sm" data-editacct="'+a.id+'">編輯</button></span></div>'
-        +'<div class="meta">'+(isNow()?"餘額":"月底餘額")+' <b>'+money(bal,a.currency)+'</b>　當月 '+mv.length+' 筆</div>'
+        +'<div class="meta">'+(isNow()?"餘額":"月底餘額")+' <b>'+M(bal,a.currency)+'</b>　當月 '+mv.length+' 筆</div>'
         +(mv.length?'<div class="dtl">'+mv.slice(0,5).map(txRow).join("")
           +(mv.length>5?'<p class="meta">…共 '+mv.length+' 筆</p>':'')+'</div>':'')+'</div>';
-    }).join("")||'<p class="empty">還沒有'+ATYPE[type]+'帳戶。</p>';
+    }).join("")||'<p class="empty">還沒有'+ATYPE[type]+'帳戶。</p>');
     if(sumEl){ const bc={}; list.forEach(a=>{ const c=a.currency||"TWD"; bc[c]=(bc[c]||0)+balanceOf(a,isNow()?null:r.m); });
-      $(sumEl).textContent=Object.entries(bc).map(([c,v])=>money(v,c)).join("　")||"—"; }
+      $(sumEl).textContent=Object.entries(bc).map(([c,v])=>M(v,c)).join("　")||"—"; }
   };
   grp("bank","#accBank","#sumBank"); grp("cash","#accCash","#sumCash"); grp("sec","#accSec","#sumSec");
 
   let tot=0;
-  $("#accCard").innerHTML=S.accounts.filter(a=>a.type==="card").map(a=>{
+  setHTML($("#accCard"),S.accounts.filter(a=>a.type==="card").map(a=>{
     const st=stmtState(a,r.m), p=st.p;
     const ac=isNow()?accruing(a):null, showAc=ac&&(+ac.e!==+p.e), accru=showAc?sumCard(a.id,ac.s,ac.e):0;
     tot+=cardDebt(a);
     const diff=st.bank===null?null:st.bank-st.calc;
     let rec='<span class="pill">未對帳</span>';
-    if(st.bank!==null) rec=diff===0?'<span class="pill g">已對帳</span>':'<span class="pill r">差額 '+fmt(Math.abs(diff))+'</span>';
+    if(st.bank!==null) rec=diff===0?'<span class="pill g">已對帳</span>':'<span class="pill r">差額'+(hideBal?'':' '+fmt(Math.abs(diff)))+'</span>';
     const pay = st.amount<=0 ? '<span class="pill">無應繳</span>'
       : (st.done||st.marked) ? '<span class="pill g">已繳款</span>'
       : (st.overdue&&isNow()) ? '<span class="pill r">逾期</span>'
@@ -1722,19 +1754,20 @@ function paintAcct(r){
     const rows=S.txns.filter(t=>(t.acct===a.id||t.acct2===a.id)&&mk(t.date)===r.m).sort((x,y)=>x.date<y.date?1:-1);
     return '<div class="blk"><div class="top"><b>'+esc(a.name)+'</b><span style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">'
       +rec+pay+'<button class="btn sm" data-editacct="'+a.id+'">編輯</button></span></div>'
-      +'<div class="meta">應繳帳單 <b>'+fmt(st.amount)+'</b>　'+md(p.s)+'–'+md(p.e)+'　繳款 '+md(p.due)
+      +'<div class="meta">應繳帳單 <b>'+F(st.amount)+'</b>　'+md(p.s)+'–'+md(p.e)+'　繳款 '+md(p.due)
       +(a.payAcct&&acctOf(a.payAcct)?'　從 '+esc(acctOf(a.payAcct).name):'　<span style="color:var(--focus)">未指定繳款帳戶</span>')
-      +(st.paid>0&&st.remain>0?'<br>已繳 <b>'+fmt(st.paid)+'</b>　尚欠 <b style="color:var(--crit)">'+fmt(st.remain)+'</b>':'')
-      +(showAc?'<br>當期累積 <b>'+fmt(accru)+'</b>　'+md(ac.s)+'–'+md(ac.e)+'（尚未結帳，已列入預留）':'')+'</div>'
+      +(st.paid>0&&st.remain>0?'<br>已繳 <b>'+F(st.paid)+'</b>　尚欠 <b style="color:var(--crit)">'+F(st.remain)+'</b>':'')
+      +(showAc?'<br>當期累積 <b>'+F(accru)+'</b>　'+md(ac.s)+'–'+md(ac.e)+'（尚未結帳，已列入預留）':'')+'</div>'
       +'<div class="fields" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px">'
-      +'<span class="fl">銀行帳單</span><input class="n" style="width:104px" data-stmt="'+a.id+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
-      +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額 '+fmt(diff)+'</button>':'')
-      +(st.remain>0?'<button class="btn sm pri" data-paycard="'+key+'">繳款 '+fmt(st.remain)+'</button>':'')
+      +'<span class="fl">銀行帳單</span><input class="n'+(hideBal?' mask':'')+'" autocomplete="off" style="width:104px" data-stmt="'+a.id+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
+      +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額'+(hideBal?'':' '+fmt(diff))+'</button>':'')
+      +(st.remain>0?'<button class="btn sm pri" data-paycard="'+key+'">繳款'+(hideBal?'':' '+fmt(st.remain))+'</button>':'')
       +(st.marked?'<button class="btn sm" data-unmark="'+key+'">取消已繳標記</button>':'')+'</div>'
       +(rows.length?'<div class="dtl">'+rows.slice(0,5).map(txRow).join("")
         +(rows.length>5?'<p class="meta">…共 '+rows.length+' 筆</p>':'')+'</div>':'')+'</div>';
-  }).join("")||'<p class="empty">還沒有信用卡。</p>';
-  $("#sumCard").textContent="未繳合計 "+money(tot);
+  }).join("")||'<p class="empty">還沒有信用卡。</p>');
+  $("#sumCard").textContent="未繳合計 "+M(tot);
+  } finally { txMask=false; }
 
 }
 
@@ -1817,11 +1850,11 @@ function daySel(k,id,val){
 
 function edList(kind, el){
   const E=EDITORS[kind];
-  $(el).innerHTML = S[kind].map(o=>
+  setHTML($(el), S[kind].map(o=>
     '<div class="blk"><div class="top"><b>'+esc(o.name||"（未命名）")+'</b>'
     +'<button class="btn sm" data-edit="'+kind+':'+o.id+'">編輯</button></div>'
     +'<div class="meta">'+E.sum(o)+'</div></div>').join("")
-    || '<p class="empty">'+E.listEmpty+'</p>';
+    || '<p class="empty">'+E.listEmpty+'</p>');
 }
 
 function buildLists(){
@@ -1835,13 +1868,14 @@ function buildLists(){
     '<div class="blk"><div class="top"><b>'+esc(c.name||"（未命名）")+'</b>'
     +'<button class="btn sm" data-edit="cats:'+c.id+'">編輯</button></div>'
     +'<div class="meta">'+EDITORS.cats.sum(c)+'</div></div>';
-  $("#l-catsOut").innerHTML=S.cats.filter(c=>c.kind==="out").map(catBlk).join("")||'<p class="empty">還沒有支出類別。</p>';
-  $("#l-catsIn").innerHTML =S.cats.filter(c=>c.kind==="in").map(catBlk).join("") ||'<p class="empty">還沒有收入類別。</p>';
+  setHTML($("#l-catsOut"),S.cats.filter(c=>c.kind==="out").map(catBlk).join("")||'<p class="empty">還沒有支出類別。</p>');
+  setHTML($("#l-catsIn"), S.cats.filter(c=>c.kind==="in").map(catBlk).join("") ||'<p class="empty">還沒有收入類別。</p>');
 
-  $("#i-buf").value=n(S.bufferPct); $("#i-day").value=n(S.payDay);
+  const keepVal=(q,v)=>{ const el=$(q); if(document.activeElement!==el) el.value=v; };   // 正在輸入的欄位不覆寫
+  keepVal("#i-buf",n(S.bufferPct)); keepVal("#i-day",n(S.payDay));
   $("#i-theme").value=S.theme||"system";
   $("#i-home").value=S.homeTab||"now";
-  if(typeof renderSetup==="function") renderSetup();
+  if(typeof renderSetup==="function") renderSetup(false);   // 只更新數量，不重播動畫
 }
 
 function renderAll(){ buildEntry(); buildLists(); paint(); }
@@ -2443,7 +2477,7 @@ document.addEventListener("input", e=>{
   paint(); save();
 });
 document.addEventListener("focusout", e=>{
-  if(!inLists(e.target)) return;
+  if(!inLists(e.target)||!(e.target.dataset&&e.target.dataset.k)) return;
   setTimeout(()=>{ if(!inLists(document.activeElement)){ buildLists(); paint(); } },0);
 });
 document.addEventListener("change", e=>{
@@ -2468,7 +2502,9 @@ document.addEventListener("change", e=>{
 });
 
 document.addEventListener("click", async e=>{
-  const t=e.target; if(!(t instanceof HTMLElement)) return;
+  let t=e.target;
+  while(t&&!(t instanceof HTMLElement)) t=t.parentNode;      // 點到按鈕裡的圖示（SVG）時，往上找到按鈕本身
+  if(!t) return;
   const tab=t.closest("nav button"); if(tab){ goTab(tab.dataset.t); return; }
   const gt=t.closest("[data-goto]"); if(gt){ goTab(gt.dataset.goto); return; }
 
@@ -2580,6 +2616,10 @@ document.addEventListener("click", async e=>{
     } return;
   }
 
+  if(t.closest("#eyeBtn")){
+    hideBal=!hideBal; try{ localStorage.setItem("yuyu.hideBal",hideBal?"1":"0"); }catch(e){}
+    paintAcct(calc()); toast(hideBal?"已隱藏餘額":"已顯示餘額"); return;
+  }
   const pcd=t.closest("[data-paycard]");
   if(pcd){ openSettle("card", pcd.dataset.paycard); return; }
   const um=t.closest("[data-unmark]");
@@ -2740,7 +2780,7 @@ function goTab(tab){
   const prev=curTab; curTab=tab;
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===tab)));
   if(tabDone){ tabDone(); tabDone=null; }
-  if(tab==="setup"){ setupNav=[]; renderSetup(); }
+  if(tab==="setup"){ setupNav=[]; renderSetup(false); }
   const inP=$("#p-"+tab), outP=(prev&&prev!==tab)?$("#p-"+prev):null;
   window.scrollTo(0,0);
   const slide=!!outP&&!!inP.animate&&!RM();
@@ -2784,16 +2824,28 @@ document.addEventListener("touchend",e=>{
 window.addEventListener("resize",resetInd);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(resetInd);
 
+/* 設定首頁的卡片可用鍵盤操作 */
+document.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".gcard[data-sgroup]")){ e.preventDefault(); e.target.click(); }
+});
+
 /* 對話框關閉時滑出 */
 document.querySelectorAll("dialog").forEach(d=>{
   const native=d.close.bind(d);
+  const nativeShow=d.showModal.bind(d);
   d.close=function(){
     const sh=d.querySelector(".sheet");
     if(!d.open||!sh||!sh.animate||RM()){ native(); return; }
-    if(d._closing) return; d._closing=true;
+    if(d._closing) return;
     const m=isMobile();
-    sh.animate([{transform:"none",opacity:1},{transform:m?"translateY(100%)":"translateY(12px) scale(.97)",opacity:m?1:0}],
-      {duration:200,easing:"cubic-bezier(.4,0,1,1)"}).onfinish=()=>{ d._closing=false; native(); };
+    const an=sh.animate([{transform:"none",opacity:1},{transform:m?"translateY(100%)":"translateY(12px) scale(.97)",opacity:m?1:0}],
+      {duration:160,easing:"cubic-bezier(.4,0,1,1)"});
+    d._closing=an;
+    an.onfinish=()=>{ if(d._closing===an){ d._closing=null; native(); } };
+  };
+  d.showModal=function(){
+    if(d._closing){ const an=d._closing; d._closing=null; an.cancel(); native(); }   // 還在收的時候又要開：立刻收完再開
+    if(!d.open) nativeShow();
   };
 });
 
@@ -2845,34 +2897,36 @@ function anim(el){
   void el.offsetWidth;                       // 重新觸發動畫
   el.classList.add(setupDir==="b"?"slide-b":"slide-f");
 }
-function renderSetup(){
+function renderSetup(animate){
+  const go=animate!==false;
   const crumb=$("#setupCrumb"), menu=$("#setupMenu");
-  document.querySelectorAll("#p-setup [data-sec]").forEach(e=>{ e.hidden=true; });
+  const cur=setupNav.length===2?setupNav[1]:null;
+  document.querySelectorAll("#p-setup [data-sec]").forEach(e=>{ e.hidden=e.dataset.sec!==cur; });
 
   if(setupNav.length===0){
     crumb.hidden=true; menu.hidden=false;
-    menu.innerHTML=SETUP_GROUPS.map(g=>
-      '<div class="gcard" data-sgroup="'+g.id+'"><span class="t">'+g.name+'<span>'+g.desc+'</span></span>'
-      +'<span class="ar">›</span></div>').join("");
+    setHTML(menu,SETUP_GROUPS.map(g=>
+      '<div class="gcard" data-sgroup="'+g.id+'" role="button" tabindex="0"><span class="t">'+g.name+'<span>'+g.desc+'</span></span>'
+      +'<span class="ar">›</span></div>').join(""));
     menu.style.display="flex"; menu.style.flexDirection="column"; menu.style.gap="11px";
-    anim(menu); return;
+    if(go) anim(menu); return;
   }
   if(setupNav.length===1){
     const g=SETUP_GROUPS.find(x=>x.id===setupNav[0]);
     crumb.hidden=false;
-    crumb.innerHTML='<button class="bk" data-sback>‹ 設定</button><span class="now">'+g.name+'</span>';
+    setHTML(crumb,'<button class="bk" data-sback>‹ 設定</button><span class="now">'+g.name+'</span>');
     menu.hidden=false; menu.style.display="block";
-    menu.innerHTML='<div class="mlist">'+g.secs.map(s=>
+    setHTML(menu,'<div class="mlist">'+g.secs.map(s=>
       '<button class="mrow" data-ssec="'+s.id+'"><span class="t">'+s.name+'<span>'+s.sub+'</span></span>'
-      +'<span class="c">'+s.c()+'</span><span class="ar">›</span></button>').join("")+'</div>';
-    anim(menu); return;
+      +'<span class="c">'+s.c()+'</span><span class="ar">›</span></button>').join("")+'</div>');
+    if(go) anim(menu); return;
   }
-  const found=secOf(setupNav[1]);
+  const found=secOf(cur);
   crumb.hidden=false;
-  crumb.innerHTML='<button class="bk" data-sback>‹ '+found.g.name+'</button><span class="now">'+found.s.name+'</span>';
+  setHTML(crumb,'<button class="bk" data-sback>‹ '+found.g.name+'</button><span class="now">'+found.s.name+'</span>');
   menu.hidden=true; menu.style.display="none";
-  const el=document.querySelector('#p-setup [data-sec="'+setupNav[1]+'"]');
-  if(el){ el.hidden=false; anim(el); }
+  const el=document.querySelector('#p-setup [data-sec="'+cur+'"]');
+  if(el&&go) anim(el);
 }
 
 S = blank();
