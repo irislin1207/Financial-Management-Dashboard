@@ -1437,10 +1437,23 @@ function stmtForMonth(card,m){
 }
 /* 尚未結帳的當期（只在看本月時有意義） */
 function accruing(card){
-  const c=Math.min(28,Math.max(1,n(card.close))), t=new Date();
+  // 正在累積的那一期：(上次結帳日, 下次結帳日]。結帳日當天的消費仍屬於當天結帳的那一期
+  const c=Math.min(28,Math.max(1,n(card.close))), t=new Date(), t0=new Date(t.getFullYear(),t.getMonth(),t.getDate());
   let last=new Date(t.getFullYear(),t.getMonth(),c);
-  if(last>t) last=new Date(t.getFullYear(),t.getMonth()-1,c);
+  if(last>=t0) last=new Date(t.getFullYear(),t.getMonth()-1,c);
   return {s:last,e:new Date(last.getFullYear(),last.getMonth()+1,c)};
+}
+/* 帳戶頁的信用卡期別：以「今天」為準，本期帳單＝剛結帳的那一期，累積中＝緊接著的下一期，兩期永遠連續。
+   上方箭頭每按一次，兩期一起往前或往後移一期。回傳本期帳單的繳款月份（帳單的鍵）與累積中的區間。 */
+function cardPeriods(card,m){
+  const c=Math.min(28,Math.max(1,n(card.close))), d=Math.min(28,Math.max(1,n(card.due)));
+  const [ty,tm]=thisMonth().split("-").map(Number), [vy,vm]=m.split("-").map(Number);
+  const k=(vy*12+vm)-(ty*12+tm), last=accruing(card).s;
+  const close=new Date(last.getFullYear(),last.getMonth()+k,c);
+  let due=new Date(close.getFullYear(),close.getMonth(),d);
+  if(due<=close) due=new Date(close.getFullYear(),close.getMonth()+1,d);
+  const key=due.getFullYear()+"-"+String(due.getMonth()+1).padStart(2,"0");
+  return {key, k, open:{s:close, e:new Date(close.getFullYear(),close.getMonth()+1,c)}};
 }
 function sumCard(id,s,e){
   return S.txns.filter(t=>t.acct===id&&(t.dir==="out"||t.dir==="ar"||t.dir==="in"))
@@ -2078,7 +2091,7 @@ function paintAcct(r){
 
   let tot=0;
   setHTML($("#accCard"),S.accounts.filter(a=>a.type==="card").map(a=>{
-    const st=stmtState(a,r.m), pa=a.payAcct?acctOf(a.payAcct):null;
+    const st=stmtState(a,cardPeriods(a,r.m).key), pa=a.payAcct?acctOf(a.payAcct):null;
     tot+=cardDebt(a);
     return '<button class="mrow arow" data-aopen="'+a.id+'"><span class="t">'+esc(a.name)
       +'<span>繳款 '+md(st.p.due)+(pa?' · 從 '+esc(pa.name):' · 未指定繳款帳戶')+'</span></span>'
@@ -2093,8 +2106,9 @@ function paintAcct(r){
     const rows=rowsOf(a), isCard=a.type==="card";
     let top, cardList=null;
     if(isCard){
-      const st=stmtState(a,r.m), p=st.p, key=a.id+':'+st.key;
-      const ac=isNow()?accruing(a):null, showAc=!!ac&&(+ac.e!==+p.e);
+      const cp=cardPeriods(a,r.m);
+      const st=stmtState(a,cp.key), p=st.p, key=a.id+':'+st.key;
+      const ac=cp.k===0?cp.open:null, showAc=!!ac;
       const settled=st.amount<=0||st.done||st.marked;
       // 預設看本期帳單；這一期已經繳清、下一期還在累積時，預設看累積中
       const tab=!showAc?"bill":(cardTab.id===a.id&&cardTab.tab?cardTab.tab:(settled?"open":"bill"));
@@ -2119,7 +2133,7 @@ function paintAcct(r){
           +'<div class="fields" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">'
           +'<span class="fl">銀行帳單</span><input class="n'+(hideBal?' mask':'')+'" autocomplete="off" style="width:120px" data-stmt="'+a.id+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
           +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額'+(hideBal?'':' '+fmt(diff))+'</button>':'')+'</div>'
-          +'<p class="note">明細只列這一期（'+per(p.s,p.e)+'）的消費，合計就是應繳金額；輸入銀行帳單金額後，應繳以銀行帳單為準。上方的箭頭可以切換到其他期。</p>';
+          +'<p class="note">'+(st.phase!=="closed"?'這一期還沒結帳，金額還會增加。':'')+'明細只列這一期（'+per(p.s,p.e)+'）的消費，合計就是應繳金額；輸入銀行帳單金額後，應繳以銀行帳單為準。上方的箭頭可以切換到其他期。</p>';
         // 繳款紀錄：放在週期標題和明細之間
         const pays=S.txns.filter(t=>t.stmtOf===a.id&&t.stmtKey===st.key).sort((x,y)=>x.date<y.date?-1:1);
         let pay=pays.map(t=>{ const src=acctOf(t.acct);
@@ -2336,9 +2350,11 @@ const EDITORS={
     fields:[{k:"name",label:"名稱",type:"text",ph:"例如：房租"},
             {k:"amount",label:"每月金額",type:"num"},
             {k:"day",label:"扣款日",type:"day"},
-            {k:"acct",label:"扣款帳戶",type:"acct"}],
+            {k:"acct",label:"扣款帳戶",type:"acct"},
+            {k:"cat",label:"類別",type:"select",opts:()=>[{v:"",t:"未分類"}].concat(S.cats.filter(c=>c.kind==="out").map(c=>({v:c.id,t:c.name})))}],
 
-    sum:o=>money(n(o.amount))+"／月　"+ruleDay(o)+" 號　"+(acctOf(o.acct)?acctOf(o.acct).name:'<span style="color:var(--focus)">未設帳戶</span>') },
+    sum:o=>money(n(o.amount))+"／月　"+ruleDay(o)+" 號　"+(acctOf(o.acct)?acctOf(o.acct).name:'<span style="color:var(--focus)">未設帳戶</span>')
+      +(catOf(o.cat)?"　"+esc(catOf(o.cat).name):"") },
 
   annual:{ title:"年繳攤提", listEmpty:"還沒有年繳項目。保費、稅金、停車費這類一年付一次的放這裡。",
     hint:"攤提起訖不必切齊年度。系統會把金額平均分攤到區間內每個月，付款月那筆從池子支出，不影響當月額度。",
@@ -2510,6 +2526,7 @@ function sharedAccrued(sh,m){
   else if(sh.nextSettle) ms=Math.max(0, ev-(mIdx(sh.nextSettle)-mIdx(m)));
   return {per, months:ms, amount:shSettle(sh,ms)};
 }
+let moveTo="", moveFree={};
 function openSettle(mode,id){
   stMode=mode; stRef=id;
   const banks=S.accounts.filter(a=>a.type!=="card");
@@ -2523,6 +2540,11 @@ function openSettle(mode,id){
     hint  = isAR
       ? "當初是從「"+((acctOf(t.acct)||{}).name||"？")+"」墊出去的，收回時可以進不同帳戶。這筆是沖銷，不算收入。"
       : "別人先幫你付的，現在還他。這筆是沖銷，不算支出（消費當下已經扣過額度）。";
+  } else if(mode==="move"){
+    const [from,to,amt0]=id.split("|"), b=acctOf(to); if(!b) return;
+    amt=n(amt0); title="轉入 "+b.name; lbl="轉出帳戶"; pre=from;
+    moveTo=to;
+    hint="把錢從選的帳戶轉到「"+b.name+"」，補足預留。建議的轉出帳戶是目前可動用最多的那個，可以改。";
   } else if(mode==="sched"){
     const o=scheduleFor(VM()).find(x=>x.id===id); if(!o) return;
     if(!o.acct){ toast("「"+o.name+"」還沒設定扣款帳戶"); return; }
@@ -2555,7 +2577,15 @@ function openSettle(mode,id){
   $("#st-acctWrap").hidden=mode==="sched";
   $("#st-acctLbl").textContent=lbl;
   $("#st-amt").value=amt;
-  $("#st-acct").innerHTML=banks.map(a=>'<option value="'+a.id+'">'+esc(a.name)+'</option>').join("")
+  if(mode==="move"){
+    const to=acctOf(moveTo), f=forecast(), free={}; f.rows.forEach(x=>{ free[x.a.id]=x.free; });
+    const list=S.accounts.filter(a=>(a.type==="bank"||a.type==="cash")&&a.id!==moveTo&&(a.currency||"TWD")===((to&&to.currency)||"TWD"));
+    banks.length=0; list.forEach(a=>banks.push(a));
+    banks.sort((x,y)=>(free[y.id]||0)-(free[x.id]||0));
+    moveFree=free;
+  }
+  $("#st-acct").innerHTML=banks.map(a=>'<option value="'+a.id+'">'+esc(a.name)
+      +(mode==="move"&&moveFree[a.id]!==undefined?'（可動用 '+fmt(Math.round(moveFree[a.id]))+'）':'')+'</option>').join("")
     ||'<option value="">尚無帳戶</option>';
   if(pre&&banks.some(a=>a.id===pre)) $("#st-acct").value=pre;
   $("#st-date").value=preDate||todayISO();
@@ -2565,6 +2595,13 @@ function openSettle(mode,id){
 function doSettle(){
   const amt=n($("#st-amt").value), acct=$("#st-acct").value, date=$("#st-date").value||todayISO();
   if(amt<=0){ $("#st-hint").textContent="請輸入金額。"; return; }
+  if(stMode==="move"){
+    const a=acctOf(acct), b=acctOf(moveTo);
+    if(!a||!b){ $("#st-hint").textContent="請選擇轉出帳戶。"; return; }
+    S.txns.push({id:uid(), date, amount:amt, dir:"transfer", acct, acct2:moveTo, cat:"", proj:"p0", note:"預留搬移", at:Date.now()});
+    toast("已記錄 "+a.name+" → "+b.name+"　"+money(amt));
+    $("#stDlg").close(); renderAll(); save(); return;
+  }
   if(stMode==="sched"){
     const o=scheduleFor(VM()).find(x=>x.id===stRef); if(!o) return;
     if(mk(date)!==VM()){ $("#st-hint").textContent="日期要在 "+VM().replace("-","/")+" 之內，才會算成這個月的扣款。"; return; }
@@ -2783,7 +2820,9 @@ function xlPlan(sheets,mode){
   });
 
   sec("固定支出",(o,r)=>{ const name=NAME(o); if(dup("fixed",name)) return null;
-    add.fixed.push({id:uid(),name,amount:POS(o,"每月金額"),day:DAY(o,"扣款日"),acct:AID(o["扣款帳戶"],"扣款帳戶"),cat:""});
+    let cat=""; const cn=xlStr(o["類別"]);
+    if(cn){ let c=all("cats").find(x=>x.name===cn&&x.kind==="out"); if(!c){ c={id:uid(),name:cn,kind:"out"}; add.cats.push(c); } cat=c.id; }
+    add.fixed.push({id:uid(),name,amount:POS(o,"每月金額"),day:DAY(o,"扣款日"),acct:AID(o["扣款帳戶"],"扣款帳戶"),cat});
     r.names.push(name); return true; });
 
   const YM=(o,k)=>{ const d=xlDate(o[k]); if(!d) throw k+"要填 2026-01 這種格式"; return d.slice(0,7); };
@@ -3019,15 +3058,7 @@ document.addEventListener("click", async e=>{
     paint(); save(); return; }
 
   const mvf=t.closest("[data-move]");
-  if(mvf){
-    const [from,to,amt]=mvf.dataset.move.split("|"), a=acctOf(from), b=acctOf(to);
-    if(a&&b&&n(amt)>0){
-      leave(mvf.closest(".todo"),()=>{
-        S.txns.push({id:uid(), date:todayISO(), amount:n(amt), dir:"transfer", acct:from, acct2:to, cat:"", proj:"p0", note:"預留搬移"});
-        renderAll(); save(); toast("已記錄 "+a.name+" → "+b.name+"　"+money(n(amt)));
-      });
-    } return;
-  }
+  if(mvf){ openSettle("move",mvf.dataset.move); return; }
   if(t.id==="confirmOpen"||t.closest("[data-confirmopen]")){
     leave(t.closest(".todo"),()=>{ S.confirmed[VM()]=true; paint(); save(); toast("本月計畫已確認"); }); return; }
 
