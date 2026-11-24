@@ -667,6 +667,37 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 .cal .day.sel.inc::after{background:var(--on-accent)}
 .cal .pad{min-height:54px}
 @media (min-width:721px){ .cal{gap:6px} .cal .day,.cal .pad{min-height:62px} }
+
+/* ---------- v3.6：交易搜尋 ---------- */
+.hrow{align-items:center}
+.hact{display:flex; align-items:center; gap:10px}
+.sbtn{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; border:0; border-radius:50%;
+  background:var(--surface); color:var(--ink-2); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08);
+  transition:background .15s ease, color .15s ease, transform .3s var(--spring)}
+.sbtn:hover{background:var(--accent-soft); color:var(--accent-ink)} .sbtn:active{transform:scale(.9)}
+.sbtn svg{width:20px; height:20px}
+#searchView{position:fixed; inset:0; z-index:80; background:var(--paper); overflow-y:auto; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch}
+#searchView .wrap{padding-top:14px; padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.shead{position:sticky; top:0; z-index:2; background:var(--paper); display:flex; flex-direction:column; gap:10px; padding:4px 0 12px}
+.sbar{display:flex; align-items:center; gap:10px}
+.sbox{flex:1; position:relative; display:flex; align-items:center}
+.sbox svg{position:absolute; left:14px; width:18px; height:18px; color:var(--ink-3); pointer-events:none}
+.sbox input{width:100%; min-height:48px; box-sizing:border-box; padding:0 44px 0 42px; border-radius:999px; font-size:1rem}
+.sbox .clr{position:absolute; right:6px; width:36px; height:36px; border:0; border-radius:50%; background:none; color:var(--ink-3); cursor:pointer; font-size:1rem}
+.sbox .clr:hover{background:var(--surface-2)}
+.sclose{border:0; background:none; font:inherit; font-weight:700; color:var(--accent-ink); min-height:44px; padding:0 4px; cursor:pointer; white-space:nowrap}
+.ssum{display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; padding:12px 16px; border-radius:18px; background:var(--accent-soft); font-size:.85rem; color:var(--ink-2)}
+.ssum b{font-size:1.05rem; font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums}
+.ssum .o b{color:var(--crit-ink)} .ssum .i b{color:var(--good-ink)}
+.sres .tx{cursor:pointer; border-radius:12px; transition:background .12s ease}
+.sres .tx:hover{background:var(--surface-2)}
+.sres .tx .d{line-height:1.25}
+.sres .tx .d small{display:block; font-size:.7rem; color:var(--ink-3)}
+.sres mark{background:var(--focus-soft); color:inherit; border-radius:3px; padding:0 1px}
+.srecent{display:flex; flex-wrap:wrap; gap:8px}
+.shint{font-size:.85rem; color:var(--ink-2); line-height:1.7}
+.shint code{font-family:inherit; font-weight:800; background:var(--surface-2); border-radius:6px; padding:1px 6px; color:var(--ink)}
 </style>
 
 </head>
@@ -682,7 +713,8 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 
 <div class="wrap">
 <header>
-  <div class="hrow"><h1>餘裕</h1><span id="saveState">載入中…</span></div>
+  <div class="hrow"><h1>餘裕</h1><span class="hact"><span id="saveState">載入中…</span>
+    <button class="sbtn" id="searchBtn" type="button" aria-label="搜尋交易" title="搜尋交易"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button></span></div>
   <div class="mnav">
     <button class="btn nav" id="mPrev" aria-label="上個月">←</button>
     <span class="lbl" id="mLabel">—</span>
@@ -907,6 +939,22 @@ input.mask{-webkit-text-security:disc; text-security:disc}
     </div>
   </div>
 </dialog>
+
+<div id="searchView" hidden role="dialog" aria-modal="true" aria-label="搜尋交易">
+  <div class="wrap">
+    <div class="shead">
+      <div class="sbar">
+        <label class="sbox"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <input type="search" id="sq" placeholder="搜尋備註、類別、帳戶、金額" autocomplete="off" enterkeyhint="search" aria-label="搜尋關鍵字">
+          <button class="clr" type="button" id="sqClr" aria-label="清除" hidden>✕</button></label>
+        <button class="sclose" type="button" id="sClose">關閉</button>
+      </div>
+      <div class="seg" id="sFilter" role="group" aria-label="篩選">
+        <button type="button" data-sf="all" aria-pressed="true">全部</button><button type="button" data-sf="out" aria-pressed="false">支出</button><button type="button" data-sf="in" aria-pressed="false">收入</button></div>
+    </div>
+    <div id="sBody"></div>
+  </div>
+</div>
 
 <dialog id="txDlg" aria-labelledby="txTitle">
   <div class="sheet">
@@ -1721,6 +1769,7 @@ function paint(){
   const salEl=$("#i-sal"); if(document.activeElement!==salEl) salEl.value=n(S.incomeFallback);
   paintNowRows(r);
   $("#dataFl").textContent=S.txns.length+" 筆交易 · "+S.accounts.length+" 個帳戶";
+  if(sOpen) runSearch();
 }
 
 let lastF=null, nowSec=null, nowDir="f";
@@ -1911,6 +1960,119 @@ function paintTxList(r){
   $("#txDayFl").innerHTML=rows.length?rows.length+" 筆"+(x.out>0?"　支出 "+fmt(Math.round(x.out)):"")+(x.inc>0?'　<span style="color:var(--good-ink)">收入 +'+fmt(Math.round(x.inc))+'</span>':""):"—";
   $("#txList").innerHTML=rows.map(txRow).join("")||'<p class="empty">這一天沒有紀錄。上方的日期已經帶入，可以直接記一筆。</p>';
 }
+
+/* ================= 交易搜尋 =================
+   每個詞都要符合（空白分隔）。數字詞：金額剛好等於，或文字裡含有這串數字；
+   >1000、<500、>=、<=、500-1000：只比金額。 */
+let sOpen=false, sFilt="all", sLimit=200, sTimer=0;
+const SEARCH_SAVE_MS=1500;
+const zen=x=>String(x||"").replace(/[\uff01-\uff5e]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0)).replace(/\u3000/g," ").toLowerCase();
+function recentQ(){ try{ const a=JSON.parse(localStorage.getItem("yuyu.recentQ")||"[]"); return Array.isArray(a)?a.slice(0,5):[]; }catch(e){ return []; } }
+function pushRecentQ(q){
+  q=q.trim(); if(!q) return;
+  try{ localStorage.setItem("yuyu.recentQ",JSON.stringify([q].concat(recentQ().filter(x=>x!==q)).slice(0,5))); }catch(e){}
+}
+function parseQ(q){
+  const toks=zen(q).split(/\s+/).filter(Boolean), out=[];
+  toks.forEach(w=>{
+    const v=w.replace(/,/g,"");
+    let m;
+    if((m=v.match(/^(>=|<=|>|<)(\d+(?:\.\d+)?)$/))) out.push({k:"cmp",op:m[1],x:+m[2]});
+    else if((m=v.match(/^(\d+(?:\.\d+)?)[-~](\d+(?:\.\d+)?)$/))&&!/^\d{1,2}[-~]\d{1,2}$/.test(v)&&+m[1]<=+m[2]&&+m[2]>31) out.push({k:"rng",a:+m[1],b:+m[2]});
+    else if(/^\d+(?:\.\d+)?$/.test(v)) out.push({k:"num",x:+v,t:v});
+    else out.push({k:"txt",t:w});
+  });
+  return out;
+}
+function txHay(t){
+  const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj), d=t.date;
+  const [y,m,dd]=d.split("-");
+  return zen([t.note, c&&c.name, a&&a.name, a2&&a2.name, p&&p.id!=="p0"&&p.name, (DIRALL[t.dir]||{}).label,
+    d, y+"/"+m+"/"+dd, (+m)+"/"+(+dd), m+"/"+dd].filter(Boolean).join(" "));
+}
+function matchTx(t,qs){
+  const amt=n(t.amount), hay=txHay(t);
+  return qs.every(q=>{
+    if(q.k==="cmp") return q.op===">"?amt>q.x:q.op==="<"?amt<q.x:q.op===">="?amt>=q.x:amt<=q.x;
+    if(q.k==="rng") return amt>=q.a&&amt<=q.b;
+    if(q.k==="num") return Math.abs(amt-q.x)<1e-9||hay.includes(q.t);
+    return hay.includes(q.t);
+  });
+}
+const isOutDir=d=>d==="out"||d==="ap"||d==="ar";
+function hiText(str,qs){
+  let h=esc(str||"");
+  qs.filter(q=>q.k==="txt"||q.k==="num").map(q=>q.t).sort((a,b)=>b.length-a.length).forEach(w=>{
+    const e=esc(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    if(e) h=h.replace(new RegExp("(?![^<]*>)("+e+")","gi"),"<mark>$1</mark>");
+  });
+  return h;
+}
+function sRow(t,qs){
+  const c=catOf(t.cat), a=acctOf(t.acct), a2=acctOf(t.acct2), p=projOf(t.proj), d=t.dir, cy=String(new Date().getFullYear());
+  const lbl=(DIRALL[d]||{label:"交易"}).label;
+  const tag=(d==="transfer"?[(a?a.name:"—")+" → "+(a2?a2.name:"—")]:[c?c.name:(d==="in"?"收入":"未分類"),a?a.name:(d==="ap"?"別人代墊":"—")])
+    .concat(p&&p.id!=="p0"?[p.name]:[]).concat(d!=="out"&&d!=="in"?[lbl]:[]).join(" · ");
+  const sign=d==="in"?"+":isOutDir(d)?"−":"", cls=d==="in"?" in":(d==="transfer"||d==="settle")?" nt":"";
+  const [y,m,dd]=t.date.split("-");
+  return '<div class="tx" data-sopen="'+t.id+'" role="button" tabindex="0"><span class="d">'+m+'/'+dd+(y!==cy?'<small>'+y+'</small>':'')+'</span>'
+    +'<span class="m"><b>'+hiText(t.note||lbl,qs)+'</b><span>'+hiText(tag,qs)+'</span></span>'
+    +'<span class="a'+cls+'">'+sign+fmt(n(t.amount))+' <span class="edt" aria-hidden="true">'+PENCIL+'</span></span></div>';
+}
+function runSearch(){
+  if(!sOpen) return;
+  const raw=$("#sq").value, qs=parseQ(raw), body=$("#sBody");
+  $("#sqClr").hidden=!raw;
+  document.querySelectorAll("#sFilter [data-sf]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sf===sFilt)));
+  if(!qs.length){
+    const rq=recentQ();
+    body.innerHTML=(rq.length?'<div class="card"><div class="hd"><h2>最近搜尋</h2></div><div class="bd"><div class="srecent">'
+        +rq.map(q=>'<button class="chip" type="button" data-sq="'+esc(q)+'">'+esc(q)+'</button>').join("")+'</div></div></div>':'')
+      +'<div class="card"><div class="hd"><h2>怎麼搜尋</h2></div><div class="bd"><p class="shint">'
+      +'輸入<code>全聯</code>找備註、類別、帳戶或專案含有全聯的交易。<br>'
+      +'多個詞用空白隔開，要全部符合，例如<code>全聯 國泰卡</code>。<br>'
+      +'<code>1200</code>找金額剛好 1,200 的交易；<code>&gt;1000</code>、<code>&lt;500</code>、<code>500-1000</code>找金額範圍。<br>'
+      +'<code>11/5</code>或<code>2026-11</code>找日期。</p></div></div>';
+    return;
+  }
+  const hits=S.txns.filter(t=>matchTx(t,qs)).filter(t=>sFilt==="all"?true:sFilt==="in"?t.dir==="in":isOutDir(t.dir))
+    .sort((x,y)=>x.date<y.date?1:x.date>y.date?-1:n(y.at)-n(x.at));
+  const outSum=hits.filter(t=>isOutDir(t.dir)).reduce((a,t)=>a+n(t.amount),0), inSum=hits.filter(t=>t.dir==="in").reduce((a,t)=>a+n(t.amount),0);
+  const span=hits.length?hits[hits.length-1].date.replace(/-/g,"/")+" – "+hits[0].date.replace(/-/g,"/"):"";
+  if(!hits.length){ body.innerHTML='<div class="card"><div class="bd"><p class="empty">找不到符合「'+esc(raw.trim())+'」的交易'+(sFilt!=="all"?"（目前只看"+(sFilt==="in"?"收入":"支出")+"）":"")+'。</p></div></div>'; return; }
+  body.innerHTML='<div class="ssum"><span>共 <b>'+hits.length+'</b> 筆</span>'
+      +(sFilt!=="in"?'<span class="o">支出 <b>'+fmt(Math.round(outSum))+'</b></span>':'')
+      +(sFilt!=="out"?'<span class="i">收入 <b>+'+fmt(Math.round(inSum))+'</b></span>':'')
+      +'<span style="flex-basis:100%;font-size:.75rem">'+span+'　支出含應收、應付；轉帳不計入合計</span></div>'
+    +'<div class="card" style="margin-top:12px"><div class="bd tight sres">'+hits.slice(0,sLimit).map(t=>sRow(t,qs)).join("")
+    +(hits.length>sLimit?'<div style="padding:12px 0;text-align:center"><button class="btn sm" type="button" id="sMore">再顯示 '+Math.min(200,hits.length-sLimit)+' 筆（還有 '+(hits.length-sLimit)+' 筆）</button></div>':'')
+    +'</div></div>';
+}
+function openSearch(){
+  sOpen=true; sLimit=200; const v=$("#searchView"); v.hidden=false; v.scrollTop=0;
+  document.documentElement.style.overflow="hidden";
+  if(v.animate&&!RM()) v.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:240,easing:EASE});
+  runSearch(); setTimeout(()=>{ const q=$("#sq"); q.focus(); q.select(); },60);
+}
+function closeSearch(){
+  if(!sOpen) return;
+  pushRecentQ($("#sq").value);
+  sOpen=false; document.documentElement.style.overflow="";
+  const v=$("#searchView");
+  if(v.animate&&!RM()) v.animate([{opacity:1},{opacity:0,transform:"translateY(14px)"}],{duration:160,easing:"ease-in"}).onfinish=()=>{ if(!sOpen) v.hidden=true; };
+  else v.hidden=true;
+}
+document.addEventListener("input",e=>{
+  if(e.target.id!=="sq") return;
+  sLimit=200; runSearch();
+  clearTimeout(sTimer); sTimer=setTimeout(()=>pushRecentQ($("#sq").value),SEARCH_SAVE_MS*2);
+});
+document.addEventListener("keydown",e=>{
+  if(e.target.id==="sq"&&e.key==="Enter"){ e.preventDefault(); pushRecentQ(e.target.value); e.target.blur(); }
+  else if(e.key==="Escape"&&sOpen&&!document.querySelector("dialog[open]")){ e.preventDefault(); closeSearch(); }
+  else if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches("[data-sopen]")){ e.preventDefault(); e.target.click(); }
+  else if(e.key==="/"&&!sOpen&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)&&!document.querySelector("dialog[open]")){ e.preventDefault(); openSearch(); }
+});
 
 /* ================= 編輯一筆交易 ================= */
 let txId=null;
@@ -2131,8 +2293,8 @@ function paintAcct(r){
           +(a.payAcct&&acctOf(a.payAcct)?'　從 '+esc(acctOf(a.payAcct).name)+' 扣款':'　<span style="color:var(--crit-ink)">未指定繳款帳戶</span>')+'</p>'
           +'<span style="display:flex;gap:6px;flex-wrap:wrap">'+rec+payPill(st)+'</span></div>'
           +'<div class="fields" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">'
-          +'<span class="fl">銀行帳單</span><input class="n'+(hideBal?' mask':'')+'" autocomplete="off" style="width:120px" data-stmt="'+a.id+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
-          +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+'">補記差額'+(hideBal?'':' '+fmt(diff))+'</button>':'')+'</div>'
+          +'<span class="fl">銀行帳單</span><input class="n'+(hideBal?' mask':'')+'" autocomplete="off" style="width:120px" data-stmt="'+a.id+':'+st.key+'" value="'+(st.bank===null?"":st.bank)+'" inputmode="numeric" placeholder="輸入核對">'
+          +(diff!==null&&diff!==0?'<button class="btn sm" data-fixdiff="'+a.id+':'+st.key+'">補記差額'+(hideBal?'':' '+fmt(diff))+'</button>':'')+'</div>'
           +'<p class="note">'+(st.phase!=="closed"?'這一期還沒結帳，金額還會增加。':'')+'明細只列這一期（'+per(p.s,p.e)+'）的消費，合計就是應繳金額；輸入銀行帳單金額後，應繳以銀行帳單為準。上方的箭頭可以切換到其他期。</p>';
         // 繳款紀錄：放在週期標題和明細之間
         const pays=S.txns.filter(t=>t.stmtOf===a.id&&t.stmtKey===st.key).sort((x,y)=>x.date<y.date?-1:1);
@@ -2984,10 +3146,11 @@ document.addEventListener("change", e=>{
     return;
   }
   if(t.dataset&&t.dataset.stmt){
-    const c=acctOf(t.dataset.stmt);
-    if(c){ if(!c.stmtAmt) c.stmtAmt={};
-      if(t.value==="") delete c.stmtAmt[VM()]; else c.stmtAmt[VM()]=n(t.value);
-      paint(); save(); }
+    const [cid,key]=t.dataset.stmt.split(":"), c=acctOf(cid);
+    if(c&&key){ if(!c.stmtAmt) c.stmtAmt={};
+      const v=t.value.replace(/[,\s]/g,"");
+      if(v==="") delete c.stmtAmt[key]; else c.stmtAmt[key]=n(v);
+      paint(); save(); toast(v===""?"已清除銀行帳單金額":"已記下銀行帳單 "+money(n(v))); }
     return; }
   if(t.id==="i-theme"){ S.theme=t.value; applyTheme(); save(); toast("主題已切換"); return; }
   if(t.id==="i-home"){ S.homeTab=t.value; save(); toast("預設頁面已更新"); return; }
@@ -3104,6 +3267,13 @@ document.addEventListener("click", async e=>{
   const ao=t.closest("[data-aopen]");
   if(ao){ acctSec=ao.dataset.aopen; acctDir="f"; cardTab={id:null,tab:null}; paintAcct(calc()); renderAcct(); window.scrollTo(0,0); return; }
   if(t.closest("[data-aback]")){ acctSec=null; acctDir="b"; renderAcct(); window.scrollTo(0,0); return; }
+  if(t.closest("#searchBtn")){ openSearch(); return; }
+  if(t.id==="sClose"){ closeSearch(); return; }
+  if(t.id==="sqClr"){ $("#sq").value=""; runSearch(); $("#sq").focus(); return; }
+  if(t.id==="sMore"){ sLimit+=200; runSearch(); return; }
+  const sfb=t.closest("[data-sf]"); if(sfb){ sFilt=sfb.dataset.sf; runSearch(); return; }
+  const sqb=t.closest("[data-sq]"); if(sqb){ $("#sq").value=sqb.dataset.sq; runSearch(); return; }
+  const so=t.closest("[data-sopen]"); if(so){ pushRecentQ($("#sq").value); openTx(so.dataset.sopen); return; }
   const tv=t.closest("[data-txview]");
   if(tv){ txView=tv.dataset.txview; try{ localStorage.setItem("yuyu.txView",txView); }catch(e){} paintTxList(calc()); return; }
   const cd=t.closest("[data-calday]");
@@ -3139,8 +3309,8 @@ document.addEventListener("click", async e=>{
 
   const fx=t.closest("[data-fixdiff]");
   if(fx){
-    const a=acctOf(fx.dataset.fixdiff); if(!a) return;
-    const st0=stmtState(a,VM()), p=st0.p, diff=st0.bank===null?0:st0.bank-st0.calc;
+    const [cid,key]=fx.dataset.fixdiff.split(":"), a=acctOf(cid); if(!a||!key) return;
+    const st0=stmtState(a,key), p=st0.p, diff=st0.bank===null?0:st0.bank-st0.calc;
     if(diff!==0){
       S.txns.push({id:uid(), date:isoOf(p.e), amount:Math.abs(diff), dir:diff>0?"out":"in",
         acct:a.id, cat:"", proj:"p0", note:"對帳差額補記", adj:true});
@@ -3321,7 +3491,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1||document.querySelector("dialog[open]")||!$("#gate").hidden) return;
   const t=e.touches[0], el=e.target;
   if(t.clientX<24||t.clientX>window.innerWidth-24) return;
-  if(el.closest&&el.closest("input,select,textarea,nav,[data-noswipe]")) return;
+  if(sOpen||(el.closest&&el.closest("input,select,textarea,nav,[data-noswipe],#searchView"))) return;
   swp={x:t.clientX,y:t.clientY,t:Date.now()};
 },{passive:true});
 document.addEventListener("touchend",e=>{
