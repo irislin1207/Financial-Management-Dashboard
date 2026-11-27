@@ -698,6 +698,28 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 .srecent{display:flex; flex-wrap:wrap; gap:8px}
 .shint{font-size:.85rem; color:var(--ink-2); line-height:1.7}
 .shint code{font-family:inherit; font-weight:800; background:var(--surface-2); border-radius:6px; padding:1px 6px; color:var(--ink)}
+
+/* ---------- v3.7：略過本月、發薪週期、類別明細頁 ---------- */
+.sch.skip{opacity:.55} .sch.skip .nm b{text-decoration:line-through}
+.sch .act .btn.x.sk{width:36px; height:36px}
+#statMain,#statSub{display:flex; flex-direction:column; gap:14px}
+.bar.more{display:block; padding:4px 0 0}
+details.cat{border-top:1px solid var(--rule)}
+details.cat>summary{list-style:none; cursor:pointer; display:grid; grid-template-columns:1fr auto; gap:2px 12px; padding:12px 17px; min-height:48px; align-items:center}
+details.cat>summary::-webkit-details-marker{display:none}
+details.cat>summary:hover{background:var(--surface-2)}
+details.cat .cn{font-weight:800}
+details.cat .cn::before{content:"›"; display:inline-block; width:14px; color:var(--ink-3); transition:transform .15s ease}
+details.cat[open] .cn::before{transform:rotate(90deg)}
+details.cat .cv{font-weight:800; font-variant-numeric:tabular-nums; text-align:right}
+details.cat .cs{grid-column:1/-1; font-size:.75rem; color:var(--ink-3); padding-left:14px}
+details.cat>.bd{padding:0 17px 8px 31px}
+.offlist{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.offrow{display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px solid var(--rule)}
+.offrow>label{display:flex; flex-direction:column; gap:2px; font-weight:700}
+.offrow .hint{font-weight:400; font-size:.75rem; color:var(--ink-3); display:block}
+.offin{display:flex; gap:8px; align-items:center}
+.offin .btn{min-height:46px; flex:none}
 </style>
 
 </head>
@@ -837,6 +859,13 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 
 <!-- 統計 -->
 <div class="panel" id="p-stat" hidden>
+  <div class="crumb" id="statCrumb" hidden></div>
+  <div id="statSub" hidden>
+    <div class="card"><div class="hd"><h2 id="catAllTitle">類別明細</h2><span class="fl" id="catAllFl">—</span></div>
+      <div class="bd"><div class="bars" id="catAllBars"></div></div>
+      <div id="catDetail"></div></div>
+  </div>
+  <div id="statMain">
   <div class="card">
     <div class="hd"><h2>類別佔比</h2>
       <span style="display:flex;gap:5px">
@@ -844,7 +873,7 @@ input.mask{-webkit-text-security:disc; text-security:disc}
         <button class="btn sm" data-scope="all" aria-pressed="false">全部</button>
       </span></div>
     <div class="bd"><div class="bars" id="catBars"></div></div>
-    <div class="bd tight sep" id="catDetail"></div>
+    <div class="bd tight sep" id="catMore"></div>
   </div>
 
   <div class="card"><div class="hd"><h2>週期性專案</h2><button class="btn sm" data-addproj="recurring">＋ 新增</button></div>
@@ -858,6 +887,7 @@ input.mask{-webkit-text-security:disc; text-security:disc}
 
   <div class="card"><div class="hd"><h2>近 3 個月趨勢</h2><span class="fl">日常支出</span></div>
     <div class="bd"><div class="bars" id="trend"></div></div></div>
+  </div>
 </div>
 
 <!-- 帳戶 -->
@@ -996,6 +1026,8 @@ input.mask{-webkit-text-security:disc; text-security:disc}
     </div>
     <div class="sheet-ft">
       <span style="flex:1"></span>
+      <button class="btn danger" type="button" id="st-skip" hidden>本月不執行</button>
+      <span style="flex:1"></span>
       <button class="btn" type="button" id="st-cancel">取消</button>
       <button class="btn pri" type="button" id="st-ok">確認</button>
     </div>
@@ -1055,7 +1087,10 @@ input.mask{-webkit-text-security:disc; text-security:disc}
       <div class="bd">
         <div class="row"><label for="i-sal">預設月收入<span class="hint">新的月份自動帶入；個別月份可在本月計畫調整</span></label><input class="n" id="i-sal" inputmode="numeric"></div>
         <div class="row"><label for="i-buf">安全緩衝 %<span class="hint">從日常額度預留</span></label><input class="n" id="i-buf" inputmode="numeric"></div>
-        <div class="row"><label for="i-day">發薪日<span class="hint">當天會提醒薪水入帳；會計期間仍為日曆月</span></label><input class="n" id="i-day" inputmode="numeric"></div>
+        <div class="row"><label for="i-day">發薪日<span class="hint" id="payHint">遇週末或國定假日提前到前一個工作日</span></label><input class="n" id="i-day" inputmode="numeric"></div>
+        <div class="offrow"><label for="i-off">自訂休假日<span class="hint">內建 2026、2027 年國定假日；其他不發薪的日子加在這裡</span></label>
+          <div class="offin"><label class="fld" style="flex:1;margin:0"><input type="date" id="i-off" aria-label="選擇日期"></label><button class="btn" type="button" id="offAdd">加入</button></div>
+          <div class="offlist" id="offList"></div></div>
       </div></div>
   </div>
 
@@ -1378,9 +1413,68 @@ function scheduleFor(m){
     o.tx=tx||null;
     const wholeMonth=o.kind==="settle"&&o.dir==="out";       // 對方付全額的結算沒有指定日，整個月都算到期
     o.dyText=wholeMonth?"本月":o.day+" 號";
-    o.state = tx ? "done" : o.overdue ? "late" : wholeMonth ? (m>thisMonth()?"wait":"due") : (o.date>today ? "wait" : (today>dateIn(m,Math.min(28,o.day+3)) ? "late" : "due"));
+    o.skipped=!tx&&isSkipped(m,o.id);
+    o.state = tx ? "done" : o.skipped ? "skip" : o.overdue ? "late" : wholeMonth ? (m>thisMonth()?"wait":"due") : (o.date>today ? "wait" : (today>dateIn(m,Math.min(28,o.day+3)) ? "late" : "due"));
   });
   return out.sort((a,b)=>a.day-b.day);
+}
+
+/* 首頁用的發薪週期試算。
+   本期收入 − 本期的固定費用（固定支出、分攤、提撥：落在本期的那一次）− 年繳攤提（一個月份）
+   − 安全緩衝 − 每月專案額度 − 本期日常已花（刷卡當下就算）。 */
+function calcCycle(){
+  const cy=payCycle(), fromI=isoOf(cy.from), toI=isoOf(cy.to), pm=cy.pm;
+  const inWin=d=>d>=fromI&&d<=toI;
+  const mtx=S.txns.filter(t=>inWin(t.date));
+  const occ=day=>{ for(const m of [mk(fromI),mk(toI)]){ const d=dateIn(m,day); if(inWin(d)) return m; } return null; };
+
+  const loggedIn=mtx.filter(t=>t.dir==="in"&&!isProjIncome(t)&&!(t.adj||t.note==="對帳差額補記")).reduce((a,t)=>a+n(t.amount),0);
+  const estM=(S.incomeEst&&S.incomeEst[pm]!==undefined&&S.incomeEst[pm]!=="")?n(S.incomeEst[pm]):null;
+  const est=estM!==null?estM:n(S.incomeFallback);
+  const sc0=salaryCat();
+  const salIn=mtx.some(t=>t.dir==="in"&&!isProjIncome(t)&&(t.salary||(sc0&&t.cat===sc0)));
+  const I = salIn ? loggedIn : Math.max(loggedIn, est);
+  const incSrc = (salIn||(loggedIn>0&&loggedIn>=est)) ? "actual" : estM!==null ? "est" : "default";
+
+  let C=0, Sk=0, corrected=0;
+  S.fixed.forEach(f=>{
+    const m=occ(ruleDay(f)); if(!m) return;
+    const act=actualOf(m,f.id); if(act===undefined&&isSkipped(m,f.id)) return;
+    if(act!==undefined) corrected+=act-n(f.amount);
+    C+=act!==undefined?act:n(f.amount);
+  });
+  S.annual.forEach(a=>{
+    if(!a.start||!a.end||pm<a.start||pm>a.end) return;
+    Sk+=n(a.amount)/Math.max(1,monthsBetween(a.start,a.end));
+  });
+  S.shared.forEach(sh=>{
+    if(sh.dir==="theyPay"){ Sk+=shMine(sh); return; }
+    const m=occ(ruleDay(sh)); if(!m) return;
+    const act=actualOf(m,sh.id); if(act===undefined&&isSkipped(m,sh.id)) return;
+    if(sh.dir==="split"){ if(act!==undefined) corrected+=act-shMine(sh); C+=act!==undefined?act:shMine(sh); return; }
+    const total=act!==undefined?act:n(sh.total);
+    if(act!==undefined) corrected+=(act-n(sh.total))/shPeople(sh);
+    C+=shMine(sh,total);
+  });
+  const actualByGoal={};
+  mtx.filter(t=>t.dir==="out"&&t.goal).forEach(t=>{ actualByGoal[t.goal]=(actualByGoal[t.goal]||0)+n(t.amount); });
+  let G=0; const gDetail=[];
+  S.goals.filter(g=>g.on).forEach(g=>{
+    const pmt=n(g.months)>0?Math.max(0,(n(g.target)-n(g.saved))/n(g.months)):0;
+    const act=actualByGoal[g.id], m=n(g.day)>0?occ(ruleDay(g)):null;
+    const use=act!==undefined?act:(m&&isSkipped(m,g.id)?0:pmt);
+    G+=use; gDetail.push({g,pmt,act,use});
+  });
+  const preBuf=I-C-Sk-G, buffer=Math.max(0,preBuf)*n(S.bufferPct)/100, dailyCap=preBuf-buffer;
+  const allocated=S.projects.filter(p=>p.kind==="recurring"&&p.id!=="p0").reduce((a,p)=>a+n(p.cap),0);
+  const p0cap=dailyCap-allocated;
+  const usedDaily=mtx.filter(t=>isDailyTx(t)&&hitsBudget(t)).reduce((a,t)=>a+n(t.amount),0);
+  const invested=Object.values(actualByGoal).reduce((a,b)=>a+b,0);
+  const DAY=86400000, days=Math.round((cy.to-cy.from)/DAY)+1;
+  const daysLeft=Math.max(1,Math.round((cy.to-day0(new Date()))/DAY)+1);
+  return {cycle:true, m:pm, pm, from:cy.from, to:cy.to, next:cy.next, mtx, I, loggedIn, est, estM, salIn, incSrc,
+          C, S:Sk, G, gDetail, buffer, dailyCap, allocated, p0cap, usedDaily, invested, corrected,
+          left:p0cap-usedDaily, days, daysLeft};
 }
 
 /* 已確認的排程金額（用於校正試算） */
@@ -1391,6 +1485,48 @@ function actualOf(m,ruleId){
 
 const salaryCat=()=>((S.cats.find(c=>c.kind==="in"&&c.name==="薪水")||S.cats.find(c=>c.kind==="in"&&c.id==="n1")||{}).id)||"";
 const payDayNum=()=>Math.min(28,Math.max(1,n(S.payDay)||1));
+
+/* ================= 假日與發薪週期 =================
+   國定假日（含補假、調整放假）依行政院人事行政總處公告的 115、116 年辦公日曆表；週六日另外判斷。
+   使用者可在設定加自訂休假日。 */
+const TW_HOLIDAYS=new Set([
+  "2026-01-01","2026-02-14","2026-02-15","2026-02-16","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22",
+  "2026-02-27","2026-02-28","2026-03-01","2026-04-03","2026-04-04","2026-04-05","2026-04-06","2026-05-01","2026-05-02","2026-05-03",
+  "2026-06-19","2026-06-20","2026-06-21","2026-09-25","2026-09-26","2026-09-27","2026-09-28","2026-10-09","2026-10-10","2026-10-11",
+  "2026-10-24","2026-10-25","2026-10-26","2026-12-25","2026-12-26","2026-12-27",
+  "2027-01-01","2027-01-02","2027-01-03","2027-02-04","2027-02-05","2027-02-06","2027-02-07","2027-02-08","2027-02-09","2027-02-10",
+  "2027-02-27","2027-02-28","2027-03-01","2027-04-03","2027-04-04","2027-04-05","2027-04-06","2027-04-30","2027-05-01","2027-05-02",
+  "2027-06-09","2027-09-15","2027-09-28","2027-10-09","2027-10-10","2027-10-11","2027-10-23","2027-10-24","2027-10-25",
+  "2027-12-24","2027-12-25","2027-12-26","2027-12-31"]);
+const HOLIDAY_YEARS=[2026,2027];
+function isOffDay(d){
+  const w=d.getDay(); if(w===0||w===6) return true;
+  const iso=isoOf(d); return TW_HOLIDAYS.has(iso)||(S.offDays||[]).includes(iso);
+}
+/* 某個月的發薪日：設定的日期，遇假日提前到前一個工作日 */
+function payDateOf(m){
+  const [y,mo]=m.split("-").map(Number);
+  let d=new Date(y,mo-1,payDayNum()), g=0;
+  while(isOffDay(d)&&g<20){ d=new Date(d.getFullYear(),d.getMonth(),d.getDate()-1); g++; }
+  return d;
+}
+/* 目前所在的發薪週期：這次發薪日 ～ 下次發薪日前一天。pm＝這一期對應的發薪月份 */
+function payCycle(){
+  const t=day0(new Date()), m=thisMonth();
+  const pm = t<payDateOf(m) ? addMonth(m,-1) : (t>=payDateOf(addMonth(m,1)) ? addMonth(m,1) : m);
+  const from=payDateOf(pm), next=payDateOf(addMonth(pm,1));
+  return {pm, from, next, to:new Date(next.getFullYear(),next.getMonth(),next.getDate()-1)};
+}
+const WDN=["日","一","二","三","四","五","六"];
+const mdw=d=>md(d)+"（"+WDN[d.getDay()]+"）";
+
+/* 略過本月：只影響那個月，設定不動 */
+function isSkipped(m,id){ return !!(S.skip&&S.skip[m]&&S.skip[m].includes(id)); }
+function setSkip(m,id,on){
+  if(!S.skip) S.skip={};
+  const a=(S.skip[m]||[]).filter(x=>x!==id); if(on) a.push(id);
+  if(a.length) S.skip[m]=a; else delete S.skip[m];
+}
 
 /* ================= 計算 ================= */
 function calc(){
@@ -1411,6 +1547,7 @@ function calc(){
   let C=0, Sk=0, advance=0, corrected=0;
   S.fixed.forEach(f=>{
     const act=actualOf(m,f.id);
+    if(act===undefined&&isSkipped(m,f.id)) return;
     if(act!==undefined) corrected += act-n(f.amount);
     C += act!==undefined ? act : n(f.amount);
   });
@@ -1422,6 +1559,7 @@ function calc(){
   // 分攤：已確認的實際總額取代預估，我的份按比例重算
   S.shared.forEach(sh=>{
     const act=actualOf(m,sh.id);
+    if(act===undefined&&sh.dir!=="theyPay"&&isSkipped(m,sh.id)) return;
     if(sh.dir==="split"){                      // 確認的那筆就是我自己付的份
       if(act!==undefined) corrected += act-shMine(sh);
       C += act!==undefined ? act : shMine(sh);
@@ -1443,7 +1581,7 @@ function calc(){
   S.goals.filter(g=>g.on).forEach(g=>{
     const pmt=n(g.months)>0?Math.max(0,(n(g.target)-n(g.saved))/n(g.months)):0;
     const act=actualByGoal[g.id];
-    const use=act!==undefined?act:pmt;
+    const use=act!==undefined?act:(n(g.day)>0&&isSkipped(m,g.id)?0:pmt);
     G+=use; gDetail.push({g,pmt,act,use});
   });
 
@@ -1561,26 +1699,26 @@ function cardDebt(card){
   for(let k=-2;k<=2;k++){ const st=stmtState(card,addMonth(thisMonth(),k)); if(st.phase!=="future") d+=st.remain; }
   return d;
 }
-function nextPayday(){
-  const t=day0(new Date()), d=Math.min(28,Math.max(1,n(S.payDay)||1));
-  let p=new Date(t.getFullYear(),t.getMonth(),d);
-  if(p<=t) p=new Date(t.getFullYear(),t.getMonth()+1,d);
-  return p;
-}
+function nextPayday(){ return payCycle().next; }
 function forecast(){
-  const today=day0(new Date()), pay=nextPayday(), m0=thisMonth(), ev=[];
+  const today=day0(new Date()), pay=nextPayday(), m0=thisMonth(), ev=[], after=[];
   S.accounts.filter(a=>a.type==="card").forEach(c=>{
     for(let k=-2;k<=2;k++){
       const st=stmtState(c,addMonth(m0,k));
       if(st.phase==="future"||st.remain<=0) continue;
       const late=st.p.due<today;
+      if(!late&&st.p.due>=pay){                 // 下次發薪後才繳：只列出、不預留
+        after.push({card:c.id, key:st.key, name:c.name+" 卡費", amt:st.remain, date:st.p.due,
+          sub:"帳單 "+md(new Date(st.p.s.getFullYear(),st.p.s.getMonth(),st.p.s.getDate()+1))+"–"+md(st.p.e)+(st.phase==="open"?" · 累積中":" · 已結帳")});
+        continue;
+      }
       ev.push({kind:"card", card:c.id, key:st.key, acct:c.payAcct||"", to:"", amt:st.remain,
         date:late?today:st.p.due, late, est:st.phase==="open", name:c.name+" 卡費",
-        sub:"帳單 "+md(st.p.s)+"–"+md(st.p.e)+(st.phase==="open"?" · 累積中，金額還會增加":" · 已結帳")});
+        sub:"帳單 "+md(new Date(st.p.s.getFullYear(),st.p.s.getMonth(),st.p.s.getDate()+1))+"–"+md(st.p.e)+(st.phase==="open"?" · 累積中，金額還會增加":" · 已結帳")});
     }
   });
   [m0,addMonth(m0,1)].forEach(m=>scheduleFor(m).forEach(o=>{
-    if(o.state==="done"||n(o.est)<=0||(o.kind==="settle"&&o.dir==="in")) return;
+    if(o.state==="done"||o.state==="skip"||n(o.est)<=0||(o.kind==="settle"&&o.dir==="in")) return;
     const d=new Date(o.date+"T00:00:00");
     if(d>=pay) return;
     const late=o.state==="late";
@@ -1614,7 +1752,8 @@ function forecast(){
         spare[d.a.id]-=take; need-=take; from.push({a:d.a,amt:take}); });
     return {a:x.a, amt:-x.free, by:x.shortAt, from, gap:need};
   });
-  return {ev, rows, loose, looseAmt, totalBal, totalFree, tips, pay, today};
+  after.sort((x,y)=>x.date-y.date);
+  return {ev, rows, loose, looseAmt, totalBal, totalFree, tips, pay, today, after};
 }
 
 function autoProject(dateISO){
@@ -1667,55 +1806,61 @@ function paint(){
   const done=!!S.confirmed[r.m];
   $("#openFl").innerHTML=done?'<span class="pill g">已確認</span>':'<span class="pill a">待確認</span>';
   $("#confirmOpen").textContent=done?"已確認 · 重新確認":"確認當月計畫";
-  const actual=r.incSrc==="actual";
+  const rp=isNow()?calcCycle():r;           // 看本月時，收入依發薪週期
+  const actual=rp.incSrc==="actual";
   $("#incBox").className="incbox"+(actual?"":" est");
-  $("#incLbl").textContent=actual?"本月收入 · 已入帳":"本月收入 · 預估";
-  rollNum($("#incV"),r.I,money);
+  $("#incLbl").textContent=(rp.cycle?"本期收入（"+md(rp.from)+"–"+md(rp.to)+"）":"本月收入")+(actual?" · 已入帳":" · 預估");
+  rollNum($("#incV"),rp.I,money);
   $("#incNote").textContent = actual
-    ? "以實際記錄的收入計算"+(r.salIn?"，薪水已入帳。":"。")
-    : (r.estM!==null?"用的是這個月的預估。":"用的是預設月收入。")+"薪水尚未入帳"
-      +(r.loggedIn>0?"，已記錄的其他收入 "+money(r.loggedIn)+" 暫不計入":"")+"；入帳後改用實際金額。";
-  $("#salBtn").hidden=!(isNow()&&!actual&&r.est>0);
+    ? "以實際記錄的收入計算"+(rp.salIn?"，薪水已入帳。":"。")
+    : (rp.estM!==null?"用的是這個月的預估。":"用的是預設月收入。")+"薪水尚未入帳"
+      +(rp.loggedIn>0?"，已記錄的其他收入 "+money(rp.loggedIn)+" 暫不計入":"")+"；入帳後改用實際金額。";
+  $("#salBtn").hidden=!(isNow()&&!actual&&rp.est>0);
   const estEl=$("#i-est");
-  if(document.activeElement!==estEl||estEl.dataset.m!==r.m){ estEl.value=r.estM!==null?r.estM:""; estEl.dataset.m=r.m; }
+  if(document.activeElement!==estEl||estEl.dataset.m!==rp.m){ estEl.value=rp.estM!==null?rp.estM:""; estEl.dataset.m=rp.m; }
   estEl.placeholder=String(n(S.incomeFallback)||"");
-  $("#estHint").textContent="只影響 "+r.m.replace("-","/")+"；留空就用預設月收入 "+fmt(n(S.incomeFallback));
+  $("#estHint").textContent=(rp.cycle?"只影響 "+md(rp.from)+"–"+md(rp.to)+" 這一期":"只影響 "+rp.m.replace("-","/"))+"；留空就用預設月收入 "+fmt(n(S.incomeFallback));
 
   $("#dueCard").hidden=isNow();
 
-  const base=Math.max(r.I,1);
-  const rows=[["月收入",r.I,"var(--accent)",false],["固定支出",-r.C,"var(--ink-2)",false],
-    ["年繳攤提",-r.S,"var(--ink-3)",false],["儲蓄提撥",-r.G,"var(--ink-2)",false],
-    ["安全緩衝",-r.buffer,"var(--ink-3)",false]]
-    .concat(r.allocated>0?[["可支配",r.dailyCap,"var(--accent)",true],["撥給每月專案",-r.allocated,"var(--ink-2)",false]]:[])
-    .concat([["日常額度",r.p0cap,"var(--accent)",true],
-    ["日常已花",-r.usedDaily,"var(--ink-3)",false],
-    ["還能花",r.left,r.left>=0?"var(--focus)":"var(--crit)",true]]);
+  const rw=isNow()?calcCycle():r;
+  const base=Math.max(rw.I,1);
+  const rows=[[rw.cycle?"本期收入":"月收入",rw.I,"var(--accent)",false],["固定支出",-rw.C,"var(--ink-2)",false],
+    ["年繳攤提",-rw.S,"var(--ink-3)",false],["儲蓄提撥",-rw.G,"var(--ink-2)",false],
+    ["安全緩衝",-rw.buffer,"var(--ink-3)",false]]
+    .concat(rw.allocated>0?[["可支配",rw.dailyCap,"var(--accent)",true],["撥給每月專案",-rw.allocated,"var(--ink-2)",false]]:[])
+    .concat([["日常額度",rw.p0cap,"var(--accent)",true],
+    ["日常已花",-rw.usedDaily,"var(--ink-3)",false],
+    ["還能花",rw.left,rw.left>=0?"var(--focus)":"var(--crit)",true]]);
   $("#wf").innerHTML=rows.map(([lb,v,col,tot])=>
     '<div class="wfrow'+(tot?" tot":"")+'"><span class="lb">'+lb+'</span>'
     +'<span class="track"><i class="fill" style="width:'+Math.min(100,Math.abs(v)/base*100).toFixed(1)+'%;background:'+col+'"></i></span>'
-    +'<span class="am"'+(tot?' style="color:'+col+'"':'')+'>'+(v<0?"−"+fmt(-v):fmt(v))+'</span></div>').join("");
-  const adj=r.gDetail.filter(d=>d.act!==undefined);
+    +'<span class="am"'+(tot?' style="color:'+col+'"':'')+'>'+(v<-0.5?"−"+fmt(-v):fmt(Math.abs(v)))+'</span></div>').join("");
+  const adj=rw.gDetail.filter(d=>d.act!==undefined);
   const bits=[];
-  if(adj.length) bits.push("提撥實際 "+money(r.invested)+"（預估 "+money(adj.reduce((a,d)=>a+d.pmt,0))+"）");
-  else if(r.invested>0) bits.push("另有提撥 "+money(r.invested));
-  if(Math.abs(r.corrected)>=1) bits.push("固定項目校正 "+(r.corrected>0?"+":"−")+fmt(Math.abs(r.corrected)));
+  if(adj.length) bits.push("提撥實際 "+money(rw.invested)+"（預估 "+money(adj.reduce((a,d)=>a+d.pmt,0))+"）");
+  else if(rw.invested>0) bits.push("另有提撥 "+money(rw.invested));
+  if(Math.abs(rw.corrected)>=1) bits.push("固定項目校正 "+(rw.corrected>0?"+":"−")+fmt(Math.abs(rw.corrected)));
+  $("#wfTitle").textContent=rw.cycle?"本期試算 "+md(rw.from)+"–"+md(rw.to):"當月試算";
+  if(rw.cycle) bits.unshift("發薪週期 "+mdw(rw.from)+" ～ "+mdw(rw.to)+"，下次發薪 "+mdw(rw.next));
   $("#wfFl").textContent = bits.join("　") || "日曆月";
 
   // 當月排程
   const sc=r.sched;
-  const schedPend=sc.filter(x=>x.state!=="done").length;
+  const schedPend=sc.filter(x=>x.state!=="done"&&x.state!=="skip").length;
   $("#schedCard").hidden = sc.length===0;
   $("#schedFl").textContent = sc.length ? (sc.length-schedPend)+" / "+sc.length+" 已確認" : "—";
   $("#schedList").innerHTML = sc.map(o=>{
     const a=acctOf(o.acct), a2=acctOf(o.acct2);
     const where = o.dir==="transfer" ? ((a?a.name:"？")+" → "+(a2?a2.name:"？")) : (a?a.name:"未設帳戶");
-    const st = o.state==="done" ? "✓" : o.state==="late" ? "!" : o.state==="due" ? "●" : "○";
+    const st = o.state==="done" ? "✓" : o.state==="skip" ? "－" : o.state==="late" ? "!" : o.state==="due" ? "●" : "○";
     return '<div class="sch '+o.state+'"><span class="dy">'+st+' '+o.dyText.replace(" ","")+'</span>'
       +'<span class="nm"><b>'+esc(o.name)+'</b><span>'+esc(where+' · '+o.tag)+'</span></span>'
       +'<span class="act">'
       + (o.state==="done"
           ? '<span class="meta">'+fmt(n(o.tx.amount))+'</span><button class="btn x" data-undo="'+o.id+'" aria-label="取消確認">✕</button>'
+          : o.state==="skip"
+          ? '<span class="meta">本月不執行</span><button class="btn sm" data-unskip="'+o.id+'">復原</button>'
           : '<span class="meta">'+fmt(Math.round(o.est))+'</span>'
             +(o.kind==="settle" ? '<button class="btn sm" data-shsettle="'+o.settle+'">'+(o.dir==="in"?"收回":"支付")+'</button>'
                                 : '<button class="btn sm" data-ok="'+o.id+'">確認</button>'))
@@ -1777,14 +1922,14 @@ const NOWSEC={rsv:"帳戶預留",sched:"固定扣款",pool:"應收與應付",pla
 function paintNowRows(r){
   const now=isNow(), f=lastF, rows=[];
   if(now&&f){
-    const short=f.rows.filter(x=>x.free<0).length+(f.loose.length?1:0);
+    const short=f.rows.filter(x=>x.free<0).length+(f.loose.length?1:0);   // 預留只算到下次發薪前
     rows.push({k:"rsv", t:"帳戶預留", warn:short>0,
       s:!f.rows.length?"新增銀行帳戶後，這裡會算出每個帳戶要留多少"
         :f.rows.filter(x=>x.free<0).length?f.rows.filter(x=>x.free<0).length+" 個帳戶不足，需要搬錢"
         :f.loose.length?"有 "+f.loose.length+" 筆沒指定扣款帳戶":"每個帳戶都夠付已知的扣款",
       c:f.ev.length?money(f.totalBal-f.totalFree):"—"});
   }
-  const sc=r.sched, pend=sc.filter(x=>x.state!=="done"), late=sc.filter(x=>x.state==="late").length;
+  const sc=r.sched, pend=sc.filter(x=>x.state!=="done"&&x.state!=="skip"), late=sc.filter(x=>x.state==="late").length;
   if(sc.length||!now) rows.push({k:"sched", t:now?"本月固定扣款":"當月扣款與繳款", warn:now&&late>0,
     s:sc.length?"已確認 "+(sc.length-pend.length)+" / "+sc.length+" 筆"+(now&&late?"　逾期 "+late+" 筆":""):"當月沒有固定扣款",
     c:pend.length?"待扣 "+fmt(pend.filter(o=>!(o.kind==="settle"&&o.dir==="in")).reduce((a,o)=>a+n(o.est),0)):sc.length?"全部完成":"—"});
@@ -1793,7 +1938,8 @@ function paintNowRows(r){
     S.shared.forEach(sh=>{ const a=sharedAccrued(sh); if(sh.dir==="iPay") ar+=a.amount; else if(sh.dir==="theyPay") ap+=a.amount; });
     rows.push({k:"pool", t:"應收與應付", s:"待收回 "+fmt(ar)+"　待支付 "+fmt(ap), c:(ar-ap<0?"−":"+")+fmt(Math.abs(ar-ap))});
   }
-  rows.push({k:"plan", t:"本月計畫", s:"收入 "+money(r.I)+(r.incSrc==="actual"?"（已入帳）":"（預估）"),
+  const rp=now?calcCycle():r;
+  rows.push({k:"plan", t:"本月計畫", s:(rp.cycle?"本期收入 ":"收入 ")+money(rp.I)+(rp.incSrc==="actual"?"（已入帳）":"（預估）"),
     c:S.confirmed[r.m]?'<span class="pill g">已確認</span>':'<span class="pill a">待確認</span>'});
   setHTML($("#nowRows"),rows.map(x=>
     '<button class="mrow'+(x.warn?" warn":"")+'" data-nopen="'+x.k+'"><span class="t">'+x.t+'<span>'+esc(x.s)+'</span></span>'
@@ -1820,26 +1966,27 @@ function paintReserve(r){
   rollNum($("#tMust"),r.C+r.S,money);
   $("#tMustSub").textContent="固定支出 "+money(r.C)+"　年繳攤提 "+money(r.S)+(r.G>0?"　另有儲蓄提撥 "+money(r.G):"");
   const f=now?forecast():null;
+  const rc=now?calcCycle():r;                // 看本月時，主數字依發薪週期
 
-  // 主數字：預算剩餘與可動用現金取較小者
+  // 主數字：本期預算剩餘與可動用現金取較小者
   const hasAcct=!!f&&f.rows.length>0;
-  const spend=hasAcct?Math.min(r.left,f.totalFree):r.left;
-  const byCash=hasAcct&&f.totalFree<r.left;
-  heroDaily=now?spend/Math.max(1,r.daysLeft):null;
+  const spend=hasAcct?Math.min(rc.left,f.totalFree):rc.left;
+  const byCash=hasAcct&&f.totalFree<rc.left;
+  heroDaily=now?spend/Math.max(1,rc.daysLeft):null;
   $("#heroLbl").textContent=now?"現在還能花":"當月結餘";
   rollNum($("#heroV"),spend,heroMoney);
   $("#hero").className="hero"+(spend<0?" warn":"");
   $("#heroSub").textContent = !now ? "該月結束後剩下的日常額度"
-    : spend<0 ? (byCash?"帳戶裡的錢不夠付已預留的款項，先處理下方的事項":"本月預算已超支 "+money(-r.left))
-    : "平均每天 "+money(heroDaily)+"　剩 "+r.daysLeft+" 天"+(byCash?"　受帳戶現金限制":"");
-  const usedPct=r.p0cap>0?r.usedDaily/r.p0cap*100:(r.usedDaily>0?100:0);
-  const timePct=now?(r.days-r.daysLeft)/r.days*100:100;
+    : spend<0 ? (byCash?"帳戶裡的錢不夠付已預留的款項，先處理下方的事項":"本期預算已超支 "+money(-rc.left))
+    : "本期 "+md(rc.from)+"–"+md(rc.to)+"　平均每天 "+money(heroDaily)+"　剩 "+rc.daysLeft+" 天"+(byCash?"　受帳戶現金限制":"");
+  const usedPct=rc.p0cap>0?rc.usedDaily/rc.p0cap*100:(rc.usedDaily>0?100:0);
+  const timePct=now?(rc.days-rc.daysLeft)/rc.days*100:100;
   const mf=$("#meterFill");
   mf.style.width=Math.min(100,Math.max(0,usedPct)).toFixed(1)+"%";
   mf.className=usedPct>100?"over":(now&&usedPct>timePct+5?"fast":"");
   $("#meterTick").hidden=!now; $("#meterTick").style.left=timePct.toFixed(1)+"%";
   $("#meterCap").textContent="預算已用 "+usedPct.toFixed(0)+"%"
-    +(now?"　本月已過 "+timePct.toFixed(0)+"%"+(usedPct>timePct+5?"　花得比時間快":""):"");
+    +(now?"　本期已過 "+timePct.toFixed(0)+"%"+(usedPct>timePct+5?"　花得比時間快":""):"");
   if(!now) return;
   lastF=f;
 
@@ -1851,11 +1998,11 @@ function paintReserve(r){
   const todo=[], DAY=86400000;
   const when=d=>(+d<=+f.today)?"今天":md(d);
   if(!S.confirmed[r.m]) todo.push({o:0, cls:"due", dy:"本月", name:"確認本月計畫",
-    sub:"收入 "+money(r.I)+"　日常額度 "+money(r.p0cap),
+    sub:"本期收入 "+money(rc.I)+"　日常額度 "+money(rc.p0cap),
     act:'<button class="btn sm pri" data-confirmopen>確認</button>'});
-  if(r.incSrc!=="actual"&&r.est>0&&f.today.getDate()>=payDayNum())
-    todo.push({o:+new Date(f.today.getFullYear(),f.today.getMonth(),payDayNum()), cls:"due", dy:payDayNum()+" 號",
-      name:"薪水入帳了嗎？", amt:r.est, sub:"金額可以改；入帳後帳戶餘額一起增加",
+  if(rc.incSrc!=="actual"&&rc.est>0&&f.today>=rc.from)
+    todo.push({o:+rc.from, cls:"due", dy:md(rc.from),
+      name:"薪水入帳了嗎？", amt:rc.est, sub:"金額可以改；入帳後帳戶餘額一起增加",
       act:'<button class="btn sm pri" data-salary>入帳</button>'});
   f.tips.forEach(t=>{
     t.from.forEach(x=>todo.push({o:+t.by, cls:"late", dy:when(t.by)+(+t.by>+f.today?" 前":""),
@@ -1919,9 +2066,16 @@ function paintReserve(r){
       +'<span class="fl" style="color:var(--focus)">'+fmt(f.looseAmt)+'　請指定繳款或扣款帳戶</span></div>'
       +'<div class="bd tight">'+f.loose.map(e=>row(e,-e.amt,null)).join("")+'</div>';
   }
+  if(f.after.length){
+    h+='<div class="sub-hd" style="border-top:1px solid var(--rule)"><h3>發薪後要繳</h3>'
+      +'<span class="fl">'+fmt(f.after.reduce((a,e)=>a+e.amt,0))+'　不預留，只列出</span></div>'
+      +'<div class="bd tight">'+f.after.map(e=>'<div class="tx"><span class="d">'+md(e.date)+'</span>'
+        +'<span class="m"><b>'+esc(e.name)+'</b><span>'+esc(e.sub)+'</span></span>'
+        +'<span class="a nt">'+fmt(e.amt)+'</span></div>').join("")+'</div>';
+  }
   $("#rsvFl").textContent=f.ev.length?"合計預留 "+money(f.totalBal-f.totalFree):"—";
   $("#rsvBody").innerHTML=h||'<div class="bd tight"><p class="empty">還沒有銀行或現金帳戶。到帳戶頁新增後，這裡會列出每個帳戶要留多少。</p></div>';
-  $("#rsvNote").textContent="刷卡當下就算進預留：已結帳與累積中的卡費全部列入；固定支出、年繳、提撥與固定轉帳列到下次發薪日（"+md(f.pay)+"）前。尚未入帳的收入不計入。";
+  $("#rsvNote").textContent="只預留下次發薪日（"+mdw(f.pay)+"）前要扣的款項：卡費、固定支出、分攤、提撥、固定轉帳。發薪後才繳的卡費另外列出，不預留；這些刷卡在刷的當下已經從還能花扣掉。尚未入帳的收入不計入。";
 }
 
 const PENCIL='<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>';
@@ -2092,7 +2246,7 @@ function openTx(id){
   $("#tx-acct").innerHTML=opts(t.acct,a=>d==="settle"?a.type!=="card":true);
   $("#tx-acct2Wrap").hidden=d!=="transfer";
   $("#tx-projWrap").hidden=!((d==="out"||d==="ap"||d==="in")&&!t.ruleId);
-  $("#tx-proj").innerHTML=S.projects.map(p=>'<option value="'+p.id+'"'+((t.proj||"p0")===p.id?" selected":"")+'>'+esc(p.name)+'</option>').join("");
+  $("#tx-proj").innerHTML=S.projects.map(p=>'<option value="'+p.id+'"'+((t.proj||"p0")===p.id?" selected":"")+'>'+(p.id==="p0"?"無專案（"+esc(p.name)+"）":esc(p.name))+'</option>').join("");
   $("#tx-acct2").innerHTML=opts(t.acct2,()=>true);
   $("#tx-hint").textContent = t.ruleId ? "這筆是固定扣款確認後產生的；改這裡不會動到設定。刪除等於取消確認。"
     : t.stmtOf ? "這筆是卡費繳款；刪除後該期帳單會回到未繳。"
@@ -2142,23 +2296,43 @@ function txRow(t){
     +' <button class="del edt" data-edittx="'+t.id+'" aria-label="編輯這筆">'+PENCIL+'</button></span></div>';
 }
 
+let statSec=null, statDir="f", catOpen={};
+document.addEventListener("toggle",e=>{ const d=e.target; if(d&&d.dataset&&d.dataset.catk!==undefined) catOpen[d.dataset.catk]=d.open; },true);
+function renderStatSub(animate){
+  const on=!!statSec;
+  $("#statMain").hidden=on; $("#statSub").hidden=!on; $("#statCrumb").hidden=!on;
+  if(on) setHTML($("#statCrumb"),'<button class="bk" data-sback2>‹ 統計</button><span class="now">類別明細</span>');
+  if(animate!==false){ setupDir=statDir; anim(on?$("#statSub"):$("#statMain")); }
+}
 function paintStat(r){
   const scope=S.ui.scope||"daily";
   const pool=r.mtx.filter(t=>hitsBudget(t)&&(scope==="daily"?t.proj==="p0":true));
   const by={}; pool.forEach(t=>{ const k=t.cat||"_"; by[k]=(by[k]||0)+n(t.amount); });
   const total=Object.values(by).reduce((a,b)=>a+b,0);
   const arr=Object.entries(by).map(([k,v])=>({k,name:(catOf(k)||{name:"未分類"}).name,v})).sort((a,b)=>b.v-a.v);
-  const max=arr.length?arr[0].v:1;
-  $("#catBars").innerHTML=arr.map((c,i)=>
-    '<div class="bar"><span class="lb">'+esc(c.name)+'</span>'
+  const max=arr.length?arr[0].v:1, TOP=5;
+  const barRow=(c,i)=>'<div class="bar"><span class="lb">'+esc(c.name)+'</span>'
     +'<span class="tr"><i style="width:'+(c.v/max*100).toFixed(1)+'%;background:'+CPAL[i%8]+'"></i></span>'
-    +'<span class="vv">'+fmt(c.v)+'<em>'+(total?(c.v/total*100).toFixed(0):0)+'%</em></span></div>').join("")
+    +'<span class="vv">'+fmt(c.v)+'<em>'+(total?(c.v/total*100).toFixed(0):0)+'%</em></span></div>';
+  const rest=arr.slice(TOP).reduce((a,c)=>a+c.v,0);
+  $("#catBars").innerHTML=arr.slice(0,TOP).map(barRow).join("")
+    +(arr.length>TOP?'<div class="bar"><span class="lb">其他 '+(arr.length-TOP)+' 類</span><span class="tr"><i style="width:'+(rest/max*100).toFixed(1)+'%;background:var(--ink-3)"></i></span>'
+      +'<span class="vv">'+fmt(rest)+'<em>'+(total?(rest/total*100).toFixed(0):0)+'%</em></span></div>':'')
     ||'<p class="empty">當月還沒有支出紀錄。</p>';
+  $("#catMore").hidden=!arr.length;
+  setHTML($("#catMore"),arr.length?'<button class="mrow" type="button" data-statall><span class="t">查看全部類別與明細<span>'
+    +arr.length+' 個類別　'+pool.length+' 筆　合計 '+fmt(total)+'</span></span><span class="ar">›</span></button>':'');
+  $("#catAllTitle").textContent=r.m.replace("-","/")+" 類別明細";
+  $("#catAllFl").textContent=(scope==="daily"?"只看日常":"全部")+" · 合計 "+fmt(total);
+  $("#catAllBars").innerHTML=arr.map(barRow).join("")||'<p class="empty">當月還沒有支出紀錄。</p>';
   $("#catDetail").innerHTML=arr.map(c=>{
     const rows=pool.filter(t=>(t.cat||"_")===c.k).sort((a,b)=>a.date<b.date?1:-1);
-    return '<div class="blk"><div class="top"><b>'+esc(c.name)+'</b><span class="meta">'+fmt(c.v)+'</span></div>'
-      +'<div class="dtl">'+rows.map(txRow).join("")+'</div></div>';
+    return '<details class="cat" data-catk="'+esc(c.k)+'"'+(catOpen[c.k]?" open":"")+'><summary><span class="cn">'+esc(c.name)+'</span>'
+      +'<span class="cv">'+fmt(c.v)+'</span><span class="cs">'+rows.length+' 筆　佔 '+(total?(c.v/total*100).toFixed(0):0)+'%</span></summary>'
+      +'<div class="bd tight">'+rows.map(txRow).join("")+'</div></details>';
   }).join("");
+  if(statSec&&!arr.length) statSec=null;
+  renderStatSub(false);
 
   const recs=S.projects.filter(p=>p.kind==="recurring");
   $("#recAlloc").innerHTML =
@@ -2381,7 +2555,7 @@ function buildEntry(){
     ||'<option value="">尚無帳戶</option>';
   $("#e-acct2").innerHTML=S.accounts.map(a=>'<option value="'+a.id+'"'+(u.acct2===a.id?" selected":"")+'>'+esc(a.name)+' · '+(a.currency||"TWD")+'</option>').join("")
     ||'<option value="">尚無帳戶</option>';
-  $("#e-proj").innerHTML=S.projects.map(p=>'<option value="'+p.id+'"'+(u.proj===p.id?" selected":"")+'>'+esc(p.name)+'</option>').join("");
+  $("#e-proj").innerHTML=S.projects.map(p=>'<option value="'+p.id+'"'+(u.proj===p.id?" selected":"")+'>'+(p.id==="p0"?"無專案（"+esc(p.name)+"）":esc(p.name))+'</option>').join("");
   $("#e-goal").innerHTML='<option value="">不投入目標</option>'
     +S.goals.map(g=>'<option value="'+g.id+'"'+(u.goal===g.id?" selected":"")+'>'+esc(g.name)+'</option>').join("");
 
@@ -2450,6 +2624,11 @@ function buildLists(){
   setHTML($("#l-catsIn"), S.cats.filter(c=>c.kind==="in").map(catBlk).join("") ||'<p class="empty">還沒有收入類別。</p>');
 
   const keepVal=(q,v)=>{ const el=$(q); if(document.activeElement!==el) el.value=v; };   // 正在輸入的欄位不覆寫
+  { const cy=payCycle();
+    $("#payHint").textContent="遇週末或國定假日提前到前一個工作日。本期 "+mdw(cy.from)+" ～ "+mdw(cy.to)+"，下次發薪 "+mdw(cy.next)
+      +(cy.next.getFullYear()>HOLIDAY_YEARS[HOLIDAY_YEARS.length-1]?"（超出內建行事曆，只判斷週末）":"");
+    setHTML($("#offList"),(S.offDays||[]).slice().sort().map(d=>'<button class="chip" type="button" data-offdel="'+d+'" aria-label="移除 '+d+'">'+d+' ✕</button>').join("")
+      ||'<span class="meta">沒有自訂休假日</span>'); }
   keepVal("#i-buf",n(S.bufferPct)); keepVal("#i-day",n(S.payDay));
   $("#i-theme").value=S.theme||"system";
   $("#i-home").value=S.homeTab||"now";
@@ -2716,9 +2895,9 @@ function openSettle(mode,id){
     hint=(o.dir==="transfer"?(a?a.name:"？")+" → "+(a2?a2.name:"？"):"從「"+(a?a.name:"？")+"」扣款")+" · "+o.tag
       +"。名稱、金額、日期都可以改，只影響這一筆，不會改到設定。";
   } else if(mode==="salary"){
-    const r=calc(), pd=payDayNum(), t=new Date();
-    amt=Math.round(r.est); title="薪水入帳"; lbl="入帳帳戶"; pre=S.salaryAcct||"";
-    preDate=t.getDate()>=pd?isoOf(new Date(t.getFullYear(),t.getMonth(),pd)):"";
+    const rc=calcCycle();
+    amt=Math.round(rc.est); title="薪水入帳"; lbl="入帳帳戶"; pre=S.salaryAcct||"";
+    preDate=isoOf(rc.from);
     hint="金額改成實際入帳的數字即可。確認後記成一筆薪水收入，這個月的試算改用實際金額，下次會記得這個帳戶。";
   } else if(mode==="card"){
     const [cid,key]=id.split(":"), c=acctOf(cid); if(!c) return;
@@ -2737,6 +2916,7 @@ function openSettle(mode,id){
   $("#stTitle").textContent=title;
   $("#st-nameWrap").hidden=name===null; $("#st-name").value=name||"";
   $("#st-acctWrap").hidden=mode==="sched";
+  $("#st-skip").hidden=mode!=="sched";
   $("#st-acctLbl").textContent=lbl;
   $("#st-amt").value=amt;
   if(mode==="move"){
@@ -3111,9 +3291,10 @@ document.addEventListener("input", e=>{
   let hit=true, re=false;
   if(t.id==="i-sal") S.incomeFallback=n(t.value);
   else if(t.id==="i-est"){ if(!S.incomeEst) S.incomeEst={};
-    if(t.value.trim()==="") delete S.incomeEst[VM()]; else S.incomeEst[VM()]=n(t.value); }
+    const km=t.dataset.m||VM();
+    if(t.value.trim()==="") delete S.incomeEst[km]; else S.incomeEst[km]=n(t.value); }
   else if(t.id==="i-buf") S.bufferPct=n(t.value);
-  else if(t.id==="i-day") S.payDay=Math.min(28,Math.max(1,n(t.value)));
+  else if(t.id==="i-day"){ S.payDay=Math.min(28,Math.max(1,n(t.value))); buildLists(); }
   else if(t.id==="e-amt"||t.id==="e-note"||t.id==="impBox"||/^sa-/.test(t.id)||/^ad-/.test(t.id)||/^ed-/.test(t.id)) return;
   else if(t.id==="e-date"){ const p=autoProject(t.value); if(p!==S.ui.proj){ S.ui.proj=p; buildEntry(); }
     if(t.value&&mk(t.value)===VM()&&t.value!==calDay){ calDay=t.value; paintTxList(calc()); } return; }
@@ -3253,6 +3434,15 @@ document.addEventListener("click", async e=>{
   const ok=t.closest("[data-ok]");
   if(ok){ openSettle("sched",ok.dataset.ok); return; }
 
+  if(t.id==="offAdd"){ const v=$("#i-off").value; if(v){ if(!S.offDays) S.offDays=[]; if(!S.offDays.includes(v)) S.offDays.push(v); $("#i-off").value=""; buildLists(); renderAll(); save(); toast("已加入 "+v); } return; }
+  const od=t.closest("[data-offdel]"); if(od){ S.offDays=(S.offDays||[]).filter(x=>x!==od.dataset.offdel); buildLists(); renderAll(); save(); return; }
+  if(t.id==="st-skip"&&stMode==="sched"){
+    const o=scheduleFor(VM()).find(x=>x.id===stRef);
+    setSkip(VM(),stRef,true); $("#stDlg").close(); renderAll(); save();
+    toast("「"+(o?o.name:"這一筆")+"」本月不執行，可在本月固定扣款復原"); return;
+  }
+  const usk=t.closest("[data-unskip]");
+  if(usk){ setSkip(VM(),usk.dataset.unskip,false); renderAll(); save(); toast("已復原"); return; }
   const un=t.closest("[data-undo]");
   if(un){
     const rid=un.dataset.undo, m=VM();
@@ -3264,6 +3454,8 @@ document.addEventListener("click", async e=>{
     } return;
   }
 
+  if(t.closest("[data-statall]")){ statSec="cat"; statDir="f"; renderStatSub(); window.scrollTo(0,0); return; }
+  if(t.closest("[data-sback2]")){ statSec=null; statDir="b"; renderStatSub(); window.scrollTo(0,0); return; }
   const ao=t.closest("[data-aopen]");
   if(ao){ acctSec=ao.dataset.aopen; acctDir="f"; cardTab={id:null,tab:null}; paintAcct(calc()); renderAcct(); window.scrollTo(0,0); return; }
   if(t.closest("[data-aback]")){ acctSec=null; acctDir="b"; renderAcct(); window.scrollTo(0,0); return; }
@@ -3410,6 +3602,8 @@ function normalize(o){
   s.cats.forEach(c=>{ delete c.tier; });
   if(!s.incomeEst||typeof s.incomeEst!=="object"||Array.isArray(s.incomeEst)) s.incomeEst={};
   if(typeof s.salaryAcct!=="string") s.salaryAcct="";
+  if(!s.skip||typeof s.skip!=="object"||Array.isArray(s.skip)) s.skip={};
+  if(!Array.isArray(s.offDays)) s.offDays=[];
   s.shared.forEach(x=>{ if(x.lastSettled===undefined) x.lastSettled="";
     // 舊資料的「我佔 %」換算成人數（50% → 2 人、25% → 4 人）
     if(x.people===undefined) x.people=n(x.myPct)>0?Math.max(1,Math.round(100/n(x.myPct))):2;
@@ -3462,6 +3656,7 @@ function goTab(tab){
   if(tab==="setup"){ setupNav=[]; renderSetup(false); }
   if(tab==="now"&&nowSec){ nowSec=null; renderNow(false); }
   if(tab==="acct"&&acctSec){ acctSec=null; renderAcct(false); }
+  if(tab==="stat"&&statSec){ statSec=null; renderStatSub(false); }
   const inP=$("#p-"+tab), outP=(prev&&prev!==tab)?$("#p-"+prev):null;
   window.scrollTo(0,0);
   const slide=!!outP&&!!inP.animate&&!RM();
@@ -3498,6 +3693,7 @@ document.addEventListener("touchend",e=>{
   if(!swp) return;
   const t=e.changedTouches[0], dx=t.clientX-swp.x, dy=t.clientY-swp.y, dt=Date.now()-swp.t; swp=null;
   if(Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.8||dt>600) return;
+  if(curTab==="stat"&&dx>0&&statSec){ statSec=null; statDir="b"; renderStatSub(); window.scrollTo(0,0); return; }
   if(curTab==="acct"&&dx>0&&acctSec){ acctSec=null; acctDir="b"; renderAcct(); window.scrollTo(0,0); return; }
   if(curTab==="now"&&dx>0&&nowSec){ nowSec=null; nowDir="b"; renderNow(); window.scrollTo(0,0); return; }
   if(curTab==="setup"&&dx>0&&setupNav.length){ setupDir="b"; setupNav.pop(); renderSetup(); window.scrollTo(0,0); return; }
